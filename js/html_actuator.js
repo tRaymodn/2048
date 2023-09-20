@@ -5,7 +5,7 @@ function HTMLActuator() {
   this.messageContainer = document.querySelector(".game-message");
 
   this.styleElement = document.createElement('style');
-  this.fiveTiles = [];
+  this.extraTiles = [];
   this.score = 0;
 }
 
@@ -115,12 +115,20 @@ HTMLActuator.prototype.createTileClass = function(tile){
 
 HTMLActuator.prototype.applyClasses = function (element, classes, tile) { // sets class attribute of desired element to the class specified
   console.log("position class applied: " + classes[2]);
-  if(classes[2].includes("5") && !this.fiveTiles.includes(classes[2])){
-    if(this.fiveTiles.length < 1){ // If no 5 tiles have been created yet, attach the style document to the head of the page to add new class styles
+  let numbers = classes[2].match(/\d+/g);
+  console.log(numbers);
+  let flag = false;
+  for(let number of numbers){ // Check if x-y is greater than 4
+    if(number > 4){
+      flag = true;
+    }
+  }
+  if(flag && !this.extraTiles.includes(classes[2])){
+    if(this.extraTiles.length < 1){ // If no 5 tiles have been created yet, attach the style document to the head of the page to add new class styles
       document.head.appendChild(this.styleElement)
     }
-    this.fiveTiles.push(classes[2]); // add tile position with 5 to fiveTiles
-    console.log("fiveTiles:" + this.fiveTiles.toString())
+    this.extraTiles.push(classes[2]); // add tile position with 5 to extraTiles
+    console.log("extraTiles:" + this.extraTiles.toString())
     this.createTileClass(tile);
     console.log(this.styleElement.innerHTML);
   }
