@@ -4,9 +4,12 @@ function HTMLActuator() {
   this.bestContainer    = document.querySelector(".best-container");
   this.messageContainer = document.querySelector(".game-message");
 
+  this.styleElement = document.createElement('style');
+  this.fiveTiles = [];
   this.score = 0;
 }
 
+// resets the board to the last board state and updates the score and best score
 HTMLActuator.prototype.actuate = function (grid, metadata) {
   var self = this;
 
@@ -47,7 +50,7 @@ HTMLActuator.prototype.clearContainer = function (container) {
 };
 
 HTMLActuator.prototype.addTile = function (tile) {
-  var self = this;
+  var self = this; // creates a consistent reference to "this" at the moment addTile was created, so even though the state of the actuator (this) might change, self will keep a snapshot of it when addTile was invoked
 
   var wrapper   = document.createElement("div");
   var inner     = document.createElement("div");
@@ -59,7 +62,7 @@ HTMLActuator.prototype.addTile = function (tile) {
 
   if (tile.value > 2048) classes.push("tile-super");
 
-  this.applyClasses(wrapper, classes);
+  this.applyClasses(wrapper, classes, position);
 
   inner.classList.add("tile-inner");
   inner.textContent = tile.value;
@@ -68,11 +71,11 @@ HTMLActuator.prototype.addTile = function (tile) {
     // Make sure that the tile gets rendered in the previous position first
     window.requestAnimationFrame(function () {
       classes[2] = self.positionClass({ x: tile.x, y: tile.y });
-      self.applyClasses(wrapper, classes); // Update the position
+      self.applyClasses(wrapper, classes, {x: tile.x+1, y: tile.y+1}); // Update the position
     });
   } else if (tile.mergedFrom) {
     classes.push("tile-merged");
-    this.applyClasses(wrapper, classes);
+    this.applyClasses(wrapper, classes, position);
 
     // Render the tiles that merged
     tile.mergedFrom.forEach(function (merged) {
@@ -80,17 +83,47 @@ HTMLActuator.prototype.addTile = function (tile) {
     });
   } else {
     classes.push("tile-new");
-    this.applyClasses(wrapper, classes);
+      //TODO This is probably where we need to dynamically create the classes that are not already there, and apply them (something like this)
+    // Or I could just use the already created applyClasses() function or jus the element.setAttrubute() function to apply the class to the element.
+    // Probably where I will use the createTileClass() function
+    this.applyClasses(wrapper, classes, position);
   }
 
   // Add the inner part of the tile to the wrapper
   wrapper.appendChild(inner);
 
   // Put the tile on the board
+
+
+  
   this.tileContainer.appendChild(wrapper);
 };
 
-HTMLActuator.prototype.applyClasses = function (element, classes) {
+HTMLActuator.prototype.createTileClass = function(tile){
+  console.log("position: " + JSON.stringify(tile));
+  var pos = document.createElement('style'); // creates a style document
+  let tileX = tile.x*121;
+  let tileY = tile.y*121;
+  // Edit the global "styleElement" style html element to include a new position class according to the position of the tile
+  this.styleElement.textContent += `.tile.tile-position-${tile.x+1}-${tile.y+1} { 
+    -webkit-transform: translate(${tileX}px, ${tileY}px);
+    -moz-transform: translate(${tileX}px, ${tileY}px);
+    -ms-transform: translate(${tileX}px, ${tileY}px);
+    transform: translate(${tileX}px, ${tileY}px); 
+  }`; // where we recreate the classes in main.css
+}
+
+HTMLActuator.prototype.applyClasses = function (element, classes, tile) { // sets class attribute of desired element to the class specified
+  console.log("position class applied: " + classes[2]);
+  if(classes[2].includes("5") && !this.fiveTiles.includes(classes[2])){
+    if(this.fiveTiles.length < 1){ // If no 5 tiles have been created yet, attach the style document to the head of the page to add new class styles
+      document.head.appendChild(this.styleElement)
+    }
+    this.fiveTiles.push(classes[2]); // add tile position with 5 to fiveTiles
+    console.log("fiveTiles:" + this.fiveTiles.toString())
+    this.createTileClass(tile);
+    console.log(this.styleElement.innerHTML);
+  }
   element.setAttribute("class", classes.join(" "));
 };
 
@@ -98,7 +131,7 @@ HTMLActuator.prototype.normalizePosition = function (position) {
   return { x: position.x + 1, y: position.y + 1 };
 };
 
-HTMLActuator.prototype.positionClass = function (position) {
+HTMLActuator.prototype.positionClass = function (position) { // takes in position and returns string with the name of the correct position class
   position = this.normalizePosition(position);
   return "tile-position-" + position.x + "-" + position.y;
 };
