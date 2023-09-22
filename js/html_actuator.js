@@ -83,9 +83,6 @@ HTMLActuator.prototype.addTile = function (tile) {
     });
   } else {
     classes.push("tile-new");
-      //TODO This is probably where we need to dynamically create the classes that are not already there, and apply them (something like this)
-    // Or I could just use the already created applyClasses() function or jus the element.setAttrubute() function to apply the class to the element.
-    // Probably where I will use the createTileClass() function
     this.applyClasses(wrapper, classes, position);
   }
 

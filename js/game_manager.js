@@ -3,6 +3,7 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
   this.actuator       = new Actuator;
+  this.gridCreated    = false;
 
   this.startTiles     = 2;
 
@@ -87,7 +88,11 @@ GameManager.prototype.actuate = function () {
   } else {
     this.storageManager.setGameState(this.serialize());
   }
-
+  if(!this.gridCreated){
+    this.createGridHTML();
+    this.gridCreated = true;
+  }
+  
   this.actuator.actuate(this.grid, {
     score:      this.score,
     over:       this.over,
@@ -97,6 +102,20 @@ GameManager.prototype.actuate = function () {
   });
 
 };
+
+GameManager.prototype.createGridHTML = function(){
+  // I want to take in the size of the board and then create and append divs to the "grid-container" class div
+  for(let i = 0; i < this.size; i++){
+    let row = document.createElement('div');
+    row.setAttribute('class', 'grid-row');
+    for(let j = 0; j < this.size; j++){
+      let cell = document.createElement('div');
+      cell.setAttribute('class', 'grid-cell');
+      row.appendChild(cell);
+    }
+    document.getElementsByClassName('grid-container')[0].appendChild(row);
+  }
+}
 
 // Represent the current game as an object
 GameManager.prototype.serialize = function () {
