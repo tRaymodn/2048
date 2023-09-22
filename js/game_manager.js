@@ -115,6 +115,8 @@ GameManager.prototype.createGridHTML = function(){
     }
     document.getElementsByClassName('grid-container')[0].appendChild(row);
   }
+  document.getElementsByClassName('game-container')[0].setAttribute('style', `width:${(this.size)*124}px; height:${(this.size)*124}px;`);
+
 }
 
 // Represent the current game as an object
