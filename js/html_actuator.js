@@ -97,7 +97,6 @@ HTMLActuator.prototype.addTile = function (tile) {
 };
 
 HTMLActuator.prototype.createTileClass = function(tile){
-  console.log("position: " + JSON.stringify(tile));
   var pos = document.createElement('style'); // creates a style document
   let tileX = tile.x*121;
   let tileY = tile.y*121;
@@ -111,9 +110,7 @@ HTMLActuator.prototype.createTileClass = function(tile){
 }
 
 HTMLActuator.prototype.applyClasses = function (element, classes, tile) { // sets class attribute of desired element to the class specified
-  console.log("position class applied: " + classes[2]);
   let numbers = classes[2].match(/\d+/g);
-  console.log(numbers);
   let flag = false;
   for(let number of numbers){ // Check if x-y is greater than 4
     if(number > 4){
