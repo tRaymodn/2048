@@ -229,8 +229,6 @@ GameManager.prototype.tileHelper = function() {
   let anArray = this.grid.availableCells();
     var value = Math.random() < 0.9 ? 2 : 4;
     for (let k = 0; k < anArray.length; k++){
-      console.log("aString" + anArray[k]);
-      
           const tile = new Tile({x: anArray[k].x, y: anArray[k].y} , value);
           this.grid.insertTile(tile);
           break;
