@@ -1,7 +1,7 @@
 // Wait till the browser is ready to render the game (avoids glitches)
 let game;
 window.requestAnimationFrame(function () {
-  game = new GameManager(5, KeyboardInputManager, HTMLActuator, LocalStorageManager);
+  game = new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager);
 });
 
 let interval;
@@ -12,8 +12,10 @@ document.getElementById('autoMove').addEventListener("click", () => {
   if(!autoMoving){
     interval = setInterval(() => {
        game.move(dir%4);
+       let state = game.getBoardState();
+       console.log(state);
        dir++;
-    }, 93);
+    }, 94);
     autoMoving = true;
   }
   else{

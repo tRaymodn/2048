@@ -86,7 +86,16 @@ GameManager.prototype.addTile = function (x, y) {
   }
 };
 
-
+GameManager.prototype.getBoardState = function(){
+  let list = [];
+  for(let i = 0; i <  this.size; i++){
+    for(let j = 0; j < this.size; j++){
+      let cell = this.grid.cellContent({x: i, y: j});
+      list.push(cell);
+    }
+  }
+  return list;
+}
 
 
 // Sends the updated grid to the actuator
@@ -214,7 +223,9 @@ GameManager.prototype.move = function (direction) {
   });
 
   if (moved) {
-    this.topLeftInsertTile();
+    this.cornerTileInsertRotating(direction);
+    console.log("direction: " + direction)
+    //this.topLeftInsertTile();
     let adjTiles = this.adjacentTiles(1,1);
     if(adjTiles.left != null){
       console.log("left: " + adjTiles.left.value + "\n");
@@ -257,6 +268,64 @@ GameManager.prototype.topLeftInsertTile = function() {
           this.grid.insertTile(tile);
           break;
         }
+}
+
+
+GameManager.prototype.cornerTileInsertRotating = function(rotation) {
+  let anArray = this.grid.availableCells();
+  let value = Math.random() < 0.9 ? 2 : 4;
+  let position;
+      switch(rotation){
+      case 0:
+        position = {x: 0, y: 0};
+        break;
+      case 1:
+        position = {x: 0, y: this.grid.size-1}
+        break;
+      case 2:
+        position = {x: this.grid.size-1, y: 0};
+        break;
+      case 3:
+        position = {x: this.grid.size-1, y: this.grid.size-1};
+        break;
+      default:
+        position = {x: 0, y: 0};
+        break;
+    }
+    const tile = new Tile(position, value);
+    if(!this.grid.cellOccupied(position)){
+      this.grid.insertTile(tile);
+    }
+    else{
+      let adjTiles = this.adjacentTiles(position.x, position.y);
+      
+      let newPosition = this.cornerTileInsertHelper(adjTiles, position.x, position.y);
+      console.log("position:" + JSON.stringify(newPosition));
+      const tile = new Tile(newPosition, value);
+      this.grid.insertTile(tile);
+    }
+}
+
+GameManager.prototype.cornerTileInsertHelper = function(tiles, x, y){
+  let tileSides = {right: {x: x+1, y:y}, left: {x: x-1, y:y}, up: {x: x, y: y-1}, down: {x: x, y: y+1}}
+  if(tiles.right == null && this.grid.withinBounds(tileSides.right)){
+    return tileSides.right;
+  }
+  else if(tiles.left == null && this.grid.withinBounds(tileSides.left)){
+    return tileSides.left;
+  }
+  else if(tiles.up == null && this.grid.withinBounds(tileSides.up)){
+    return tileSides.up;
+  }
+  else if(tiles.down == null && this.grid.withinBounds(tileSides.down)){
+    return tileSides.down;
+  }
+  else{
+    let list = [tileSides.right, tileSides.left, tileSides.up, tileSides.down];
+    for(const i of list){
+      return this.cornerTileInsertHelper(this.adjacentTiles(i.x, i.y), i.x, i.y);
+    }
+  }
 }
 
 //function that returns an array of tiles that are present on the board ofter merges
