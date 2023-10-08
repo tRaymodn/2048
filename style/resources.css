@@ -1,0 +1,22 @@
+body{
+    text-align: center;
+    background-color: gray;
+    color: rgb(173, 45, 45);
+  }
+  .title,.resources{
+    background-color: whitesmoke;
+    background-clip:border-box
+  }
+a{
+    color:  rgb(255, 255, 255);
+}
+h2,footer{
+    background-color: whitesmoke;
+    color: rgb(173, 45, 45);
+}
+div{
+    background-color: rgb(165, 33, 33);
+}
+#src{
+    color: rgb(173, 45, 45);
+}

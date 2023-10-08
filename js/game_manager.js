@@ -214,9 +214,33 @@ GameManager.prototype.move = function (direction) {
   });
 
   if (moved) {
-    this.tileHelper();
-    
-
+    this.topLeftInsertTile();
+    let adjTiles = this.adjacentTiles(1,1);
+    if(adjTiles.left != null){
+      console.log("left: " + adjTiles.left.value + "\n");
+    }else{
+      console.log("No tile at" + "(LEFT) " + "\n");
+    }
+    if(adjTiles.right != null){
+      console.log("Right: " + adjTiles.right.value + "\n");
+    }else{
+      console.log("No tile at "  + " (RIGHT) " + "\n");
+    }
+    if(adjTiles.up != null){
+      console.log("Up: " + adjTiles.up.value + "\n");
+    }else{
+      console.log("No tile at "  + " (UP) " + "\n");
+    }
+    if(adjTiles.down != null){
+      console.log("Down: " + adjTiles.down.value + "\n");
+    }else{
+      console.log("No tile at " + " (DOWN) " + "\n");
+    }
+    let occupiedCellsArr = this.getOccupiedCells();
+    let maxTile = this.getLargestCell(occupiedCellsArr);
+      for(let i = 0; i < maxTile.length; i++){
+        console.log("Max Tile X: " + maxTile[i].x + " Max Tile Y: " + maxTile[i].y + " Max Tile Value: " + maxTile[i].value);
+      }
     if (!this.movesAvailable()) {
       this.over = true; // Game over!
     }
@@ -225,16 +249,78 @@ GameManager.prototype.move = function (direction) {
   }
 };
 
-GameManager.prototype.tileHelper = function() {
+GameManager.prototype.topLeftInsertTile = function() {
   let anArray = this.grid.availableCells();
     var value = Math.random() < 0.9 ? 2 : 4;
-    for (let k = 0; k < anArray.length; k++){
-          const tile = new Tile({x: anArray[k].x, y: anArray[k].y} , value);
+    for (let i = 0; i < anArray.length; i++){
+          const tile = new Tile({x: anArray[i].x, y: anArray[i].y} , value);
           this.grid.insertTile(tile);
           break;
         }
 }
 
+//function that returns an array of tiles that are present on the board ofter merges
+GameManager.prototype.getOccupiedCells = function(){
+  let occupiedCells = [];
+  let count = 0;
+  for(let i = 0; i < this.size; i++){
+    for(let j = 0; j < this.size; j++){
+      let aCell = {x: i, y: j};
+      if (this.grid.cellOccupied(aCell)){
+        let aTile = this.grid.cellContent(aCell);
+        occupiedCells[count] = aTile;
+        count++;
+      }
+    }
+  }
+  return occupiedCells;
+}
+
+
+//function takes in array of tiles, and returns an Array of maxTiles whether it be one or more
+GameManager.prototype.getLargestCell = function(anArray){
+  let max = 0;
+  let maxTiles = [];
+  let count = 0;
+for(let i = 0; i < anArray.length; i++){
+  let value = anArray[i].value;
+  if (max < value) max = value;
+}
+for(let i = 0; i < anArray.length; i++){
+  let value = anArray[i].value;
+   let position = {x: anArray[i].x, y: anArray[i].y};
+  if (max === value){
+    maxTiles[count] = new Tile(position, max);
+    count++;
+  }
+}
+return maxTiles;
+}
+
+GameManager.prototype.immutableMoves = function(){
+  let occupiedCells = this.getOccupiedCells();
+  let largestTiles = this.getLargestCell(occupiedCells);
+}
+
+
+GameManager.prototype.adjacentTiles = function(x, y){
+  let rightPos = {x: x + 1, y: y};
+  let leftPos = {x: x - 1, y: y};
+  let upPos = {x: x, y: y - 1};
+  let downPos = {x: x, y: y + 1};
+  let right = this.grid.cellContent(rightPos);
+  let left = this.grid.cellContent(leftPos);
+  let up = this.grid.cellContent(upPos);
+  let down = this.grid.cellContent(downPos);
+  const adj = {
+    right: right,
+    left: left,
+    up: up,
+    down: down
+  }
+
+  return adj;
+}
 // Get the vector representing the chosen direction
 GameManager.prototype.getVector = function (direction) {
   // Vectors representing tile movement
