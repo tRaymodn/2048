@@ -10,9 +10,18 @@ body{
 a{
     color:  rgb(255, 255, 255);
 }
-h2,footer{
+h2{
     background-color: whitesmoke;
     color: rgb(173, 45, 45);
+}
+footer{
+    background-color: whitesmoke;
+    color: rgb(173, 45, 45);
+    
+}
+h3{
+    background: rgb(185, 183, 183);
+    color: rgb(173, 45, 45);;
 }
 div{
     background-color: rgb(165, 33, 33);
