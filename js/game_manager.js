@@ -14,6 +14,99 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.setup();
 }
 
+GameManager.prototype.download = function (filename, text) {
+  var pom = document.createElement('a');
+  pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  pom.setAttribute('download', filename);
+
+  if (document.createEvent) {
+      var event = document.createEvent('MouseEvents');
+      event.initEvent('click', true, true);
+      pom.dispatchEvent(event);
+  }
+  else {
+      pom.click();
+  }
+}
+
+GameManager.prototype.appendState = function(state, move){
+  let newState = []
+  for(let i = 0; i<Math.pow(this.size, 2); i++){
+    if(state[i] === null){
+      newState.push(0);
+    }
+    else{
+      newState.push(state[i].value);
+    }
+  }
+  this.states.push(newState)
+  let moveEntry;
+  switch(move){
+    case 0:
+      moveEntry = [1, 0, 0, 0]
+      break;
+    case 1:
+      moveEntry = [0, 1, 0, 0]
+      break;
+    case 2:
+      moveEntry = [0, 0, 1, 0]
+      break;
+    case 3:
+      moveEntry = [0, 0, 0, 1]
+      break;
+    default:
+      moveEntry = [0, 0, 0, 0]
+      break;
+  }
+  this.moves.push(moveEntry);
+}
+
+GameManager.prototype.statesToString = function(){
+  let totalString = "[ "
+  for(let i = 0; i < this.states.length; i++){
+    let thisState = "[ ";
+    for(let j = 0; j < Math.pow(this.size, 2); j++){
+      if(j === Math.pow(this.size, 2) - 1){
+        thisState = thisState + this.states[i][j];
+      }
+      else{
+        thisState = thisState + `${this.states[i][j]}, `;
+      }
+    }
+    if(i === this.states.length - 1){
+      totalString+= thisState + "] ";
+    }
+    else{
+      totalString += thisState + "], "
+    }
+  }
+  totalString += "]"
+  return totalString;
+}
+
+GameManager.prototype.movesToString = function(){
+  let totalString = "[ "
+  for(let i = 0; i < this.moves.length; i++){
+    let thisMove = "[ ";
+    for(let j = 0; j < 4; j++){
+      if(j === 3){
+        thisMove = thisMove + this.moves[i][j];
+      }
+      else{
+        thisMove = thisMove + `${this.moves[i][j]}, `;
+      }
+    }
+    if(i === this.moves.length - 1){
+      totalString+= thisMove + "] ";
+    }
+    else{
+      totalString += thisMove + "], "
+    }
+  }
+  totalString += "]"
+  return totalString;
+}
+
 // Restart the game
 GameManager.prototype.restart = function () {
   this.storageManager.clearGameState();
@@ -44,12 +137,16 @@ GameManager.prototype.setup = function () {
     this.over        = previousState.over;
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
+    this.states = [];
+    this.moves = [];
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
+    this.states = [];
+    this.moves = [];
 
     // Add the initial tiles
     this.addStartTiles();
@@ -120,7 +217,9 @@ GameManager.prototype.actuate = function () {
     over:       this.over,
     won:        this.won,
     bestScore:  this.storageManager.getBestScore(),
-    terminated: this.isGameTerminated()
+    terminated: this.isGameTerminated(),
+    states : this.states,
+    moves: this.moves
   });
 
 };
@@ -184,6 +283,9 @@ GameManager.prototype.move = function (direction) {
 
   // Save the current tile positions and remove merger information
   this.prepareTiles();
+  let state = this.getBoardState();
+  let move = direction;
+  console.log(move)
 
   // Traverse the grid in the right direction and move tiles
   traversals.x.forEach(function (x) {
@@ -223,9 +325,10 @@ GameManager.prototype.move = function (direction) {
   });
 
   if (moved) {
-    this.cornerTileInsertRotating(direction);
+    this.appendState(state, move);
+    this.addRandomTile()
+    //this.cornerTileInsertRotating(direction);
     console.log("direction: " + direction)
-    //this.topLeftInsertTile();
     let adjTiles = this.adjacentTiles(1,1);
     if(adjTiles.left != null){
       console.log("left: " + adjTiles.left.value + "\n");
@@ -253,6 +356,8 @@ GameManager.prototype.move = function (direction) {
         console.log("Max Tile X: " + maxTile[i].x + " Max Tile Y: " + maxTile[i].y + " Max Tile Value: " + maxTile[i].value);
       }
     if (!this.movesAvailable()) {
+      this.download("moves.txt", this.movesToString())
+      this.download("states.txt", this.statesToString())
       this.over = true; // Game over!
     }
 
@@ -272,7 +377,6 @@ GameManager.prototype.topLeftInsertTile = function() {
 
 
 GameManager.prototype.cornerTileInsertRotating = function(rotation) {
-  let anArray = this.grid.availableCells();
   let value = Math.random() < 0.9 ? 2 : 4;
   let position;
       switch(rotation){
