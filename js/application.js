@@ -13,7 +13,7 @@ document.getElementById('autoMove').addEventListener("click", () => {
     interval = setInterval(() => {
        game.move(dir%4);
        let state = game.getBoardState();
-       console.log(state);
+       //console.log(state);
        dir++;
     }, 94);
     autoMoving = true;
