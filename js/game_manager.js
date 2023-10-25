@@ -11,8 +11,12 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
 
+  
   this.setup();
+  this.setBoardSize();
 }
+
+
 
 GameManager.prototype.download = function (filename, text) {
   var pom = document.createElement('a');
@@ -114,6 +118,52 @@ GameManager.prototype.restart = function () {
   this.setup();
 };
 
+GameManager.prototype.removeGridRows = function(className, nToRemove){
+let all = document.querySelectorAll('.' + className);
+console.log(all);
+for (let i = 0; i < nToRemove; i++){
+  all[i].remove();;
+}
+}
+
+GameManager.prototype.setBoardSize = function (){
+const sizeInput = document.getElementById("sizeInput");
+const plus = document.getElementById("plus");
+const minus= document.getElementById("minus");
+
+
+
+plus.addEventListener('click', () => {
+  if (sizeInput.value < 15 ){
+    this.removeGridRows('grid-row', sizeInput.value);
+    sizeInput.value = parseInt(sizeInput.value) + 1;
+    this.size = sizeInput.value;
+    console.log(sizeInput.value);
+
+    this.gridCreated = false;
+    this.over = true;
+    
+    this.restart();
+    this.actuate();
+  }
+});
+
+minus.addEventListener('click', () => {
+  if (sizeInput.value > 2 ){
+    this.removeGridRows('grid-row', sizeInput.value);
+    sizeInput.value = parseInt(sizeInput.value) - 1;
+    this.size = sizeInput.value;
+    console.log(sizeInput.value);
+    this.gridCreated = false;
+    this.over = true;
+    
+    this.restart();
+    this.actuate();
+  }
+});
+
+}
+
 // Keep playing after winning (allows going over 2048)
 GameManager.prototype.keepPlaying = function () {
   this.keepPlaying = true;
@@ -128,7 +178,7 @@ GameManager.prototype.isGameTerminated = function () {
 // Set up the game
 GameManager.prototype.setup = function () {
   var previousState = this.storageManager.getGameState();
-
+  
   // Reload the game from a previous game if present
   if (previousState) {
     this.grid        = new Grid(previousState.grid.size,
@@ -225,19 +275,32 @@ GameManager.prototype.actuate = function () {
 };
 
 GameManager.prototype.createGridHTML = function(){
+  let gridContainer = document.getElementsByClassName('grid-container')[0];
+  let gameContainer = document.getElementsByClassName('game-container')[0];
   // I want to take in the size of the board and then create and append divs to the "grid-container" class div
   for(let i = 0; i < this.size; i++){
     let row = document.createElement('div');
     row.setAttribute('class', 'grid-row');
     for(let j = 0; j < this.size; j++){
+     console.log(this.size);
+     console.log((this.size + 1) * 15 );
       let cell = document.createElement('div');
       cell.setAttribute('class', 'grid-cell');
+      if(this.size > 8 ){
+        
+        cell.setAttribute('style', `width: ${(gameContainer.offsetWidth - ((this.size/10 + 1) * 15 )) / this.size}px; height: ${(gameContainer.offsetHeight - ((this.size/10 + 1)) * 15 )/this.size}px;`);
+      }
+      else cell.setAttribute('style', `width: 106px; height: 106px;`);
       row.appendChild(cell);
     }
-    document.getElementsByClassName('grid-container')[0].appendChild(row);
-  }
-  document.getElementsByClassName('game-container')[0].setAttribute('style', `width:${(this.size)*124}px; height:${(this.size)*124}px;`);
 
+    gridContainer.appendChild(row);
+    
+    
+  }
+  if(this.size  <= 8){
+  gameContainer.setAttribute('style', `width: ${(121 * this.size) + 15}px; height:${(121 * this.size) + 15}px;`);
+  }
 }
 
 // Represent the current game as an object
