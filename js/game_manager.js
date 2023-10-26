@@ -138,8 +138,6 @@ plus.addEventListener('click', () => {
     this.removeGridRows('grid-row', sizeInput.value);
     sizeInput.value = parseInt(sizeInput.value) + 1;
     this.size = sizeInput.value;
-    console.log(sizeInput.value);
-
     this.gridCreated = false;
     this.over = true;
     
@@ -153,7 +151,6 @@ minus.addEventListener('click', () => {
     this.removeGridRows('grid-row', sizeInput.value);
     sizeInput.value = parseInt(sizeInput.value) - 1;
     this.size = sizeInput.value;
-    console.log(sizeInput.value);
     this.gridCreated = false;
     this.over = true;
     
@@ -282,13 +279,11 @@ GameManager.prototype.createGridHTML = function(){
     let row = document.createElement('div');
     row.setAttribute('class', 'grid-row');
     for(let j = 0; j < this.size; j++){
-     console.log(this.size);
-     console.log((this.size + 1) * 15 );
       let cell = document.createElement('div');
       cell.setAttribute('class', 'grid-cell');
       if(this.size > 8 ){
         
-        cell.setAttribute('style', `width: ${(gameContainer.offsetWidth - ((this.size/10 + 1) * 15 )) / this.size}px; height: ${(gameContainer.offsetHeight - ((this.size/10 + 1)) * 15 )/this.size}px;`);
+        cell.setAttribute('style', `width: ${(gameContainer.offsetWidth - (this.size * 16 )) / this.size}px; height: ${(gameContainer.offsetHeight - (this.size * 16 ))/this.size}px;`);
       }
       else cell.setAttribute('style', `width: 106px; height: 106px;`);
       row.appendChild(cell);
