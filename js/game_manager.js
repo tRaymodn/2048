@@ -220,6 +220,15 @@ GameManager.prototype.addRandomTile = function () {
   }
 };
 
+GameManager.prototype.addRandomTileGrid = function(grid){
+  if (grid.cellsAvailable()) {
+    var value = Math.random() < 0.9 ? 2 : 4;
+    var tile = new Tile(grid.randomAvailableCell(), value);
+
+    grid.insertTile(tile);
+  }
+}
+
 // Adds a tile in a random position
 GameManager.prototype.addTile = function (x, y) {
   if (this.grid.cellsAvailable()) {
@@ -325,6 +334,12 @@ GameManager.prototype.moveTile = function (tile, cell) {
   this.grid.cells[cell.x][cell.y] = tile;
   tile.updatePosition(cell);
 };
+
+GameManager.prototype.moveTileGrid = function(tile, cell, grid){
+  grid.cells[tile.x][tile.y] = null;
+  grid.cells[cell.x][cell.y] = tile;
+  tile.updatePosition(cell);
+}
 
 // Move tiles on the grid in the specified direction
 GameManager.prototype.move = function (direction) {
@@ -489,6 +504,120 @@ GameManager.prototype.cornerTileInsertHelper = function(tiles, x, y){
     }
   }
 }
+/**
+ * This function will take in a grid of cells and a move, represented by a number, (0-3), and return the resulting grid
+ * @param {Grid} grid // The state of the board before the move
+ * @param {Number} move // The move to be executed on the given grid
+ */
+GameManager.prototype.getResultingPosition = function(grid, direction){
+  let newCells = []
+  for(let i = 0; i < grid.cells.length; i++){
+    let newRow = []
+    for(let j = 0; j < this.size; j++){
+      if(grid.cells[i][j] !== null){
+        newRow.push({position: {x: grid.cells[i][j].x, y: grid.cells[i][j].y}, value: grid.cells[i][j].value})
+      }
+      else{
+        newRow.push(null)
+      }
+    }
+    newCells.push(newRow)
+  }
+  let newGrid = new Grid(grid.size, newCells)
+    // 0: up, 1: right, 2: down, 3: left
+    var self = this;
+
+    if (this.isGameTerminated()) return; // Don't do anything if the game's over
+  
+    var cell, tile;
+  
+    var vector     = this.getVector(direction);
+    var traversals = this.buildTraversals(vector);
+    var moved      = false;
+  
+    // Save the current tile positions and remove merger information
+    this.prepareTiles();
+    let state = this.getBoardState();
+    let move = direction;
+    console.log(move)
+  
+    // Traverse the grid in the right direction and move tiles
+    traversals.x.forEach(function (x) {
+      traversals.y.forEach(function (y) {
+        cell = { x: x, y: y };
+        tile = newGrid.cellContent(cell);
+  
+        if (tile) {
+          var positions = self.findFarthestPositionGrid(cell, vector, newGrid);
+          var next      = newGrid.cellContent(positions.next);
+  
+          // Only one merger per row traversal?
+          if (next && next.value === tile.value && !next.mergedFrom) {
+            var merged = new Tile(positions.next, tile.value * 2);
+            merged.mergedFrom = [tile, next];
+  
+            newGrid.insertTile(merged);
+            newGrid.removeTile(tile);
+  
+            // Converge the two tiles' positions
+            tile.updatePosition(positions.next);
+  
+            // Update the score
+            self.score += merged.value;
+  
+            // The mighty 2048 tile
+            if (merged.value === 2048) self.won = true;
+          } else {
+            self.moveTileGrid(tile, positions.farthest, newGrid);
+          }
+  
+          if (!self.positionsEqual(cell, tile)) {
+            moved = true; // The tile moved from its original cell!
+          }
+        }
+      });
+    });
+    this.printGrid(newGrid)
+    if(moved){
+      return {grid: newGrid, moved:true};
+    }
+    return {grid: newGrid, moved: false};
+    if (moved) {
+      // here we print the grid and then add the random tile, so right now the representation shows the grid after the move, and before a new tile gets inserted
+      this.printGrid(newGrid)
+      this.appendState(state, move);
+      this.addRandomTileGrid(newGrid)
+      //this.cornerTileInsertRotating(direction);
+      console.log("direction: " + direction)
+      let occupiedCellsArr = this.getOccupiedCells();
+      let maxTile = this.getLargestCell(occupiedCellsArr);
+        for(let i = 0; i < maxTile.length; i++){
+          console.log("Max Tile X: " + maxTile[i].x + " Max Tile Y: " + maxTile[i].y + " Max Tile Value: " + maxTile[i].value);
+        }
+      if (!this.movesAvailable()) {
+        this.over = true; // Game over!
+      }
+  
+      // this.actuate(); don't think we want to actuate since this is just going to return an array of tiles
+    }
+}
+
+GameManager.prototype.printGrid = function(grid){
+  let cells = grid.cells;
+  let ar = []
+  for(let i = 0; i < cells.length; i++){
+    for(let j = 0; j < this.size; j++){
+      if(cells[i][j] === null){
+        ar.push(0);
+      }
+      else{
+        ar.push(cells[i][j].value)
+      }
+    }
+
+  }
+  console.log(JSON.stringify(ar));
+}
 
 //function that returns an array of tiles that are present on the board ofter merges
 GameManager.prototype.getOccupiedCells = function(){
@@ -567,9 +696,9 @@ GameManager.prototype.getVector = function (direction) {
 
 // Build a list of positions to traverse in the right order
 GameManager.prototype.buildTraversals = function (vector) {
-  var traversals = { x: [], y: [] };
+  let traversals = { x: [], y: [] };
 
-  for (var pos = 0; pos < this.size; pos++) {
+  for (let pos = 0; pos < this.size; pos++) {
     traversals.x.push(pos);
     traversals.y.push(pos);
   }
@@ -596,6 +725,22 @@ GameManager.prototype.findFarthestPosition = function (cell, vector) {
     next: cell // Used to check if a merge is required
   };
 };
+
+// This function does exactly the same as the findFarthestPosition, but takes in a grid
+GameManager.prototype.findFarthestPositionGrid = function(cell, vector,  grid){
+  var previous;
+
+  // Progress towards the vector direction until an obstacle is found
+  do {
+    previous = cell;
+    cell     = { x: previous.x + vector.x, y: previous.y + vector.y };
+  } while (grid.withinBounds(cell) &&
+           grid.cellAvailable(cell));
+  return {
+    farthest: previous,
+    next: cell // Used to check if a merge is required
+  };
+}
 
 GameManager.prototype.movesAvailable = function () {
   return this.grid.cellsAvailable() || this.tileMatchesAvailable();
