@@ -9,14 +9,15 @@ let dir = 0;
 let autoMoving = false;
 
 document.getElementById('autoMove').addEventListener("click", () => {
+  
   if(!autoMoving){
     interval = setInterval(() => {
       let move = keepLargestInCorner();
-       game.move(move);
-       let state = game.getBoardState();
-       console.log(state);
-       dir++;
-    }, 200);
+      game.move(move);
+      let state = game.getBoardState();
+      console.log(state);
+      dir++;
+    }, 50);
     autoMoving = true;
   }
   else{
@@ -26,12 +27,12 @@ document.getElementById('autoMove').addEventListener("click", () => {
 })
 
 const isCorner = function(x, y){
-  return ((x == 0 && (y == 0 || y == game.size)) ||
-          (x == game.size && (y == 0 || y == game.size)))
+  return ((x == 0 && (y == 0 || y == game.size - 1)) ||
+          (x == game.size && (y == 0 || y == game.size - 1 )))
 }
 
 const isBorder = function(x, y){
-  return ((x == 0 || x == game.size)||(y == 0 || y == game.size));
+  return ((x == 0 || x == game.size  - 1) ||(y == 0 || y == game.size -1));
 }
 
 const keepLargestInCorner = function(){
@@ -39,6 +40,9 @@ const keepLargestInCorner = function(){
   let borderMoves = []; 
   let move;
   let g = game.grid;
+  let currMax = 0;
+  let maxList = [];
+  let dir;
   for(let i = 0; i < 4; i++){
     let maxTiles = [];
     let tiles = [];
@@ -54,19 +58,36 @@ const keepLargestInCorner = function(){
     }
 
     maxTiles = game.getLargestCell(tiles);
-    
-    for (let tile of maxTiles){
-    
-      let x = tile.x;
-      let y = tile.y;
-      if (isCorner(x,y) && result.moved){
-        cornerMoves.push(i);
+    for(let tile of maxTiles){
+      if(maxList.length === 0){
+        if (result.moved){
+          maxList.push({maxTile: tile, direction: i})
+        }
       }
-      else if (isBorder(x,y) && result.moved){
-        borderMoves.push(i);
+      else if(tile.value === maxList[0].maxTile.value && result.moved){
+        maxList.push({maxTile: tile, direction: i})
+      }
+      else if (tile.value > maxList[0].maxTile.value && result.moved){
+        maxList = [];
+        maxList.push({maxTile: tile, direction: i})
       }
     }
+
+    console.log("MaxTiles: " + JSON.stringify(maxTiles),"Direction: " +  i);
   }
+
+  for(tile of maxList){
+    console.log(tile);
+     let x = tile.maxTile.x;
+    let y = tile.maxTile.y;
+    if (isCorner(x,y)  && tile.maxTile.value == maxList[0].maxTile.value){
+      cornerMoves.push(tile.direction);
+    }
+    else if (isBorder(x,y) && tile.maxTile.value == maxList[0].maxTile.value ){
+      borderMoves.push(tile.direction);
+    }
+  }
+
   console.log(`CornerMoves: ${cornerMoves}`);
   console.log(`BorderMoves: ${borderMoves}`);
     let cmL = cornerMoves.length;
