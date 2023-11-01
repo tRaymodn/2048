@@ -19,7 +19,7 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
     grid.cells.forEach(function (column) {
       column.forEach(function (cell) {
         if (cell) {
-          self.addTile(cell);
+          self.addTile(cell, grid.size);
         }
       });
     });
@@ -38,6 +38,34 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
   });
 };
 
+HTMLActuator.prototype.setPositionClasses = function(grid){
+  this.styleElement.textContent = ''; // reset
+  let gameContainer = document.getElementsByClassName('game-container')[0];
+  let tileX;
+  let tileY;
+  let flag = false;
+  if(grid.size > 8){
+    flag = true;
+  }
+  for(let i = 0; i < grid.size; i++){
+    for(let j = 0; j < grid.size; j++){
+      if(flag){
+        tileX = i*((gameContainer.offsetWidth - (grid.size * 16 )) / grid.size) + 15*i;
+        tileY = j*((gameContainer.offsetWidth - (grid.size * 16 )) / grid.size) + 15*j;
+      }
+      else{
+        tileX = i*121;
+        tileY = j*121;
+      }
+      this.styleElement.textContent += `.tile.tile-position-${i+1}-${j+1} { 
+      -webkit-transform: translate(${tileX}px, ${tileY}px);
+      -moz-transform: translate(${tileX}px, ${tileY}px);
+      -ms-transform: translate(${tileX}px, ${tileY}px);
+      transform: translate(${tileX}px, ${tileY}px);}`
+    }
+  }
+}
+
 // Continues the game (both restart and keep playing)
 HTMLActuator.prototype.continueGame = function () {
   this.clearMessage();
@@ -49,82 +77,66 @@ HTMLActuator.prototype.clearContainer = function (container) {
   }
 };
 
-HTMLActuator.prototype.addTile = function (tile) {
+HTMLActuator.prototype.addTile = function (tile, boardSize) {
   var self = this; // creates a consistent reference to "this" at the moment addTile was created, so even though the state of the actuator (this) might change, self will keep a snapshot of it when addTile was invoked
 
   var wrapper   = document.createElement("div");
   var inner     = document.createElement("div");
   var position  = tile.previousPosition || { x: tile.x, y: tile.y };
   var positionClass = this.positionClass(position);
+  let gameContainer = document.getElementsByClassName('game-container')[0];
 
   // We can't use classlist because it somehow glitches when replacing classes
   var classes = ["tile", "tile-" + tile.value, positionClass];
 
   if (tile.value > 2048) classes.push("tile-super");
 
-  this.applyClasses(wrapper, classes, position);
+  this.applyClasses(wrapper, classes, position, boardSize);
 
-  inner.classList.add("tile-inner");
+  if(boardSize <=8){
+    inner.classList.add("tile-inner");
+  }
+  else{
+    inner.classList.add("tile-inner");
+    inner.setAttribute("style", `width: ${(gameContainer.offsetWidth - (boardSize * 16 )) / boardSize}px; height: ${(gameContainer.offsetHeight - (boardSize * 16 ))/boardSize}px;
+    font-size: ${55-boardSize*2.47}px; line-height: ${(gameContainer.offsetWidth - (boardSize * 16 )) / boardSize}px;`)
+    wrapper.setAttribute("style", `width: ${(gameContainer.offsetWidth - (boardSize * 16 )) / boardSize}px; height: ${(gameContainer.offsetHeight - (boardSize * 16 ))/boardSize}px;
+    font-size: ${55-boardSize*2.47}px; line-height: ${(gameContainer.offsetWidth - (boardSize * 16 )) / boardSize}px;`)
+  }
   inner.textContent = tile.value;
 
   if (tile.previousPosition) {
     // Make sure that the tile gets rendered in the previous position first
     window.requestAnimationFrame(function () {
       classes[2] = self.positionClass({ x: tile.x, y: tile.y });
-      self.applyClasses(wrapper, classes, {x: tile.x, y: tile.y}); // Update the position
+      self.applyClasses(wrapper, classes, {x: tile.x, y: tile.y}, boardSize); // Update the position
     });
   } else if (tile.mergedFrom) {
     classes.push("tile-merged");
-    this.applyClasses(wrapper, classes, position);
+    this.applyClasses(wrapper, classes, position, boardSize);
 
     // Render the tiles that merged
     tile.mergedFrom.forEach(function (merged) {
-      self.addTile(merged);
+      self.addTile(merged, boardSize);
     });
   } else {
     classes.push("tile-new");
-    this.applyClasses(wrapper, classes, position);
+    this.applyClasses(wrapper, classes, position, boardSize);
   }
 
   // Add the inner part of the tile to the wrapper
   wrapper.appendChild(inner);
 
   // Put the tile on the board
-
-
-  
   this.tileContainer.appendChild(wrapper);
 };
 
-HTMLActuator.prototype.createTileClass = function(tile){
-  var pos = document.createElement('style'); // creates a style document
-  let tileX = tile.x*121;
-  let tileY = tile.y*121;
-  // Edit the global "styleElement" style html element to include a new position class according to the position of the tile
-  this.styleElement.textContent += `.tile.tile-position-${tile.x+1}-${tile.y+1} { 
-    -webkit-transform: translate(${tileX}px, ${tileY}px);
-    -moz-transform: translate(${tileX}px, ${tileY}px);
-    -ms-transform: translate(${tileX}px, ${tileY}px);
-    transform: translate(${tileX}px, ${tileY}px); 
-  }`; // where we recreate the classes in main.css
-}
-
-HTMLActuator.prototype.applyClasses = function (element, classes, tile) { // sets class attribute of desired element to the class specified
-  let numbers = classes[2].match(/\d+/g);
-  let flag = false;
-  for(let number of numbers){ // Check if x-y is greater than 4
-    if(number > 4){
-      flag = true;
-    }
-  }
-  if(flag && !this.extraTiles.includes(classes[2])){
+HTMLActuator.prototype.applyClasses = function (element, classes, tile, boardSize) { // sets class attribute of desired element to the class specified
+  if(!this.extraTiles.includes(classes[2])){
     if(this.extraTiles.length < 1){ // If no 5 tiles have been created yet, attach the style document to the head of the page to add new class styles
       document.head.appendChild(this.styleElement)
     }
     this.extraTiles.push(classes[2]); // add tile position with 5 to extraTiles
-    console.log("extraTiles:" + this.extraTiles.toString())
-    this.createTileClass(tile);
-    console.log(this.styleElement.innerHTML);
   }
   element.setAttribute("class", classes.join(" "));
 };

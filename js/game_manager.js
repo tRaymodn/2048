@@ -140,7 +140,7 @@ plus.addEventListener('click', () => {
     this.size = sizeInput.value;
     this.gridCreated = false;
     this.over = true;
-    
+
     this.restart();
     this.actuate();
   }
@@ -198,6 +198,9 @@ GameManager.prototype.setup = function () {
     // Add the initial tiles
     this.addStartTiles();
   }
+
+  //Set the position classes
+  this.actuator.setPositionClasses(this.grid);
 
   // Update the actuator
   this.actuate();
