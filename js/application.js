@@ -147,3 +147,40 @@ const getMoveMostEmpty = function(){
   console.log("best move:" + m)
   return m
 }
+
+const keepChain = function(){
+  /* I am going for my chain, which starts in the bottom right corner and extends to the left to start and working up the board
+  So ideally, I want to keep the highest value tile at the last(?) position in the array and I want following moves to build up the next highest value in the chain.
+  how to represent each value in the chain? -
+  check to see whether the value in the corner is the highest value
+  consecutively check the tiles, according to their positions in the array based on what the chain should look like- 
+  i.e is the second tile that is part of the chain the second-highest value on the board?
+  if so, then we need to check the next value in the chain.
+  going like this, once we get to a value along the shape of the chain that does not fit with our chain structure, we try to build up that value.
+  Maybe that means taking the next move that increases the value of that particular tile (or maybe the tiles surrounding it)
+  We want to merge things up in the chain in a particular direction so as to not disrupt the basic structure
+  - - - >
+  | - - -
+  - - - |
+  | - - -
+  */
+
+  
+  // check chain values - positions are: (grid) [3][3], [3][2], [3][1], [3][0], [2][3]... etc for MY chain. with the root tile being at grid.cells[3][3]
+  let flag = false;
+  let previousTile = game.grid.cells[3][3]; // need to account for when there is no tile here, such as in the beginning of the game, or when we have to move away
+  if(previousTile === null){
+    previousTile = {value: 0}
+  }
+  console.log(cornerTile)
+  for(let i = 3; i >=0; i--){
+    for(let j = 3; j >=0; j--){
+      let chainTile = game.grid.cells[i][j]; // this should represent the current tile in MY defined chain
+      // maybe go through the shape of the chain until we find a value later in the chain that is larger than a value earlier in the chain, then we know where to dump stuff
+      if(chainTile.value > previousTile.value){
+        flag = true // when this flag is set, then we need to start pumping the previous value, because it is messing up the chain
+      }
+    }
+  }
+
+}
