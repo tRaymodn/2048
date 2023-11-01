@@ -361,7 +361,7 @@ GameManager.prototype.move = function (direction) {
   this.prepareTiles();
   let state = this.getBoardState();
   let move = direction;
-  console.log(move)
+  //console.log(move)
 
   // Traverse the grid in the right direction and move tiles
   traversals.x.forEach(function (x) {
@@ -403,6 +403,7 @@ GameManager.prototype.move = function (direction) {
   if (moved) {
     this.appendState(state, move);
     this.addRandomTile()
+    /*
     //this.cornerTileInsertRotating(direction);
     console.log("direction: " + direction)
     let adjTiles = this.adjacentTiles(1,1);
@@ -431,6 +432,7 @@ GameManager.prototype.move = function (direction) {
       for(let i = 0; i < maxTile.length; i++){
         console.log("Max Tile X: " + maxTile[i].x + " Max Tile Y: " + maxTile[i].y + " Max Tile Value: " + maxTile[i].value);
       }
+      */
     if (!this.movesAvailable()) {
       this.download("moves.txt", this.movesToString())
       this.download("states.txt", this.statesToString())
@@ -542,7 +544,7 @@ GameManager.prototype.getResultingPosition = function(grid, direction){
     this.prepareTiles();
     let state = this.getBoardState();
     let move = direction;
-    console.log(move)
+    //console.log(move)
   
     // Traverse the grid in the right direction and move tiles
     traversals.x.forEach(function (x) {
@@ -619,7 +621,7 @@ GameManager.prototype.printGrid = function(grid){
     }
 
   }
-  console.log(JSON.stringify(ar));
+  //console.log(JSON.stringify(ar));
 }
 
 //function that returns an array of tiles that are present on the board ofter merges

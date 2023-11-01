@@ -16,7 +16,7 @@ document.getElementById('autoMove').addEventListener("click", () => {
        let state = game.getBoardState();
        console.log(state);
        dir++;
-    }, 250);
+    }, 200);
     autoMoving = true;
   }
   else{
@@ -26,12 +26,12 @@ document.getElementById('autoMove').addEventListener("click", () => {
 })
 
 const isCorner = function(x, y){
-  return ((x == 0 && (y == 0 || y == 3)) ||
-          (x == 3 && (y == 0 || y == 3)))
+  return ((x == 0 && (y == 0 || y == game.size)) ||
+          (x == game.size && (y == 0 || y == game.size)))
 }
 
 const isBorder = function(x, y){
-  return ((x == 0 || x == 3)||(y == 0 || y == 3));
+  return ((x == 0 || x == game.size)||(y == 0 || y == game.size));
 }
 
 const keepLargestInCorner = function(){
@@ -54,13 +54,11 @@ const keepLargestInCorner = function(){
     }
 
     maxTiles = game.getLargestCell(tiles);
-    console.log("Maxes:" + maxTiles[0].value);
     
     for (let tile of maxTiles){
     
       let x = tile.x;
       let y = tile.y;
-      console.log(x);
       if (isCorner(x,y) && result.moved){
         cornerMoves.push(i);
       }
@@ -76,8 +74,8 @@ const keepLargestInCorner = function(){
 
     if (cmL == 0){
       if (bmL == 0){
-        console.log("RANDOM")
-        move = Math.floor(Math.random() * 4);
+        console.log("MOSTEMPTY")
+        move = getMoveMostEmpty();
       }
       else{
         move = borderMoves[0];
