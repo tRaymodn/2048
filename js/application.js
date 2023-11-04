@@ -7,15 +7,18 @@ window.requestAnimationFrame(function () {
 let interval;
 let dir = 0;
 let autoMoving = false;
+document.getElementById('singleMove').addEventListener("click", () => {
+  let move = keepLargestInCorner();
+      game.move(move);
+})
 
 document.getElementById('autoMove').addEventListener("click", () => {
-  
   if(!autoMoving){
     interval = setInterval(() => {
       let move = keepLargestInCorner();
       game.move(move);
       let state = game.getBoardState();
-      console.log(state);
+      //console.log(state);
       dir++;
     }, 50);
     autoMoving = true;
@@ -35,29 +38,166 @@ const isBorder = function(x, y){
   return ((x == 0 || x == game.size  - 1) ||(y == 0 || y == game.size -1));
 }
 
-const keepLargestInCorner = function(){
-  let cornerMoves = [];
-  let borderMoves = []; 
-  let move;
-  let g = game.grid;
-  let currMax = 0;
-  let maxList = [];
-  let dir;
-  for(let i = 0; i < 4; i++){
-    let maxTiles = [];
-    let tiles = [];
-    result = game.getResultingPosition(g, i);
-    //console.log("result: " + JSON.stringify(result.grid.cells))
+const isLockedRow = function(r, tiles){
+  let locked = true;
+  for(let i = 0; i < game.size; i++){
+    if(tiles[r * game.size + i] === null){
+      locked = false;
+      break;
+    }
+  }
+return locked;
+}
 
+const isLockedCol = function(c, tiles){
+  let locked = true;
+  for(let i = 0; i < game.size; i++){
+    if(tiles[i * game.size + c] === null){
+      locked = false;
+      break;
+    }
+  }
+  return locked;
+}
+
+const countTiles = function(tiles, row, col){
+  //console.log(tiles)
+  let rCount = 0;
+  let cCount = 0;
+  for (let tile of tiles){
+    if (tile !== null){
+      if (tile.x === row){
+        rCount++;
+      }
+      if (tile.y === col){
+        cCount++;
+      }
+    }
+  }
+  return {r: rCount, c: cCount};
+
+}
+
+
+const getCurrentTiles = function() {
+  let allCells = [];
+  let g = game.grid;
+  for (let i = 0; i < g.cells.length; i++){
+    for (let j = 0; j < g.cells[i].length; j++){
+        allCells.push(g.cells[i][j]);
+    }
+  }
+  return allCells;
+}
+
+const getCurrentOccupiedTiles = function() {
+  let currOccupied = [];
+  let g = game.grid;
+  for (let i = 0; i < g.cells.length; i++){
+    for (let j = 0; j < g.cells[i].length; j++){
+      if (g.cells[i][j] !== null){
+        currOccupied.push(g.cells[i][j]);
+      }
+    }
+  }
+  return currOccupied;
+}
+
+const getAllResults = function(g, i){
+  let tiles = [];
+    result = game.getResultingPosition(g, i);
     for(let j = 0; j < result.grid.cells.length; j++){
       for(let k = 0; k < result.grid.cells[j].length; k++){
-        if(result.grid.cells[j][k] !== null){
           tiles.push(result.grid.cells[j][k]);
+      }
+    }
+  return tiles;
+}
+
+const getOccupiedResults = function(g, i){
+  let currOccupied = [];
+  result = game.getResultingPosition(g, i);
+  for (let i = 0; i < result.grid.cells.length; i++){
+    for (let j = 0; j < result.grid.cells[i].length; j++){
+      if (result.grid.cells[i][j] !== null){
+        currOccupied.push(result.grid.cells[i][j]);
+      }
+    }
+  }
+  return currOccupied;
+}
+
+/* takes in a tile and the current board state as an array of tiles. For every move direction, chack if valid move, if so then go through every tile in
+that move to see if any are in the corner and they are the max value. if so, calculate the number of tiles in the row and col and compare them to 
+the current grid. If new is greater than old in either direction, return that move. */
+
+const lockBase = function(allCells, cell){
+  let g = game.grid;
+  let move = null;
+
+  for (let i = 0; i < 4; i++){
+    let tiles = getAllResults(g, i);
+    //console.log("lockTiles: " + tiles);
+    if (result.moved){
+      for(let tile of tiles){
+        if(tile !== null && tile.value >= cell.value && isCorner(tile.x,tile.y)){
+        //console.log("lockTiles: " + JSON.stringify(tiles));
+        let row = tile.x;
+        let col = tile.y;
+        //console.log(row);
+        let currCounts = countTiles(allCells, row, col);
+        let currR = currCounts.r;
+        let currC = currCounts.c;
+        let resultCounts = countTiles(tiles, row, col);
+        let resultR = resultCounts.r;
+        let resultC = resultCounts.c;
+        //console.log(currR , currC);
+        //console.log(resultR , resultC);
+          if ((resultR > currR || resultC > currC) ){
+            move = i;
+          }
         }
       }
     }
+  }
+  return move;
+}
 
-    maxTiles = game.getLargestCell(tiles);
+/* takes in a tile checks if it is already locked in two directions, if not we run lockMove, else we return null */
+const lockBaseHelper = function(tile){
+  let move = null;
+  let allCells = getCurrentTiles();
+  if((!isLockedRow(tile.x, allCells) && !isLockedCol(tile.y, allCells))){
+    let lockMove = lockBase(allCells, tile);
+    //console.log("lockMove: " + lockMove)
+      if(lockMove !== null){
+        move = lockMove;
+        console.log("LOCKED");
+    }
+  }
+
+  return move;
+}
+
+/* Prefaces putting largest tile in the corner, if the largest possible tile is already on the board and in a corner, it will move to lock out either a row
+or column that tile is located in, if no moves can be made to fill a row or column,  it will make a move to have the most empty tiles.
+if the largest possible next tile is not in a corner, it will find border and corner moves for that tile (i.e., moves that put that largest tile in the
+corner, then the border). if a corner move is avalible, it will make it, if not it will make a border move, if neither, it will make the most empty move. */
+const keepLargestInCorner = function(){
+  let cornerMoves = [];
+  let borderMoves = []; 
+  let g = game.grid;
+  let maxList = [];
+  let move;
+  let resultOccupied = [];
+  //console.log("g: " + JSON.stringify(g.cells));
+
+  for(let i = 0; i < 4; i++){ 
+    let maxTiles = [];
+    resultOccupied = getOccupiedResults(g, i); // get occupied tiles for the current board in every move direction
+    
+
+    maxTiles = game.getLargestCell(resultOccupied); // get max for all tiles
     for(let tile of maxTiles){
       if(maxList.length === 0){
         if (result.moved){
@@ -72,30 +212,45 @@ const keepLargestInCorner = function(){
         maxList.push({maxTile: tile, direction: i})
       }
     }
+    
 
-    console.log("MaxTiles: " + JSON.stringify(maxTiles),"Direction: " +  i);
+    //console.log("MaxTiles: " + JSON.stringify(maxTiles),"Direction: " +  i);
   }
 
-  for(tile of maxList){
-    console.log(tile);
-     let x = tile.maxTile.x;
+  let currOccupied = getCurrentOccupiedTiles(); // get current board occupied tiles
+
+  for(let tile of currOccupied){ // check if max possible tile will be in corner
+    if (tile.value === maxList[0].maxTile.value && isCorner(tile.x,tile.y)){
+      move =  lockBaseHelper(tile);
+      if (move !== null){
+        return move;
+      }
+      else{
+        console.log("EMPTY");
+        return getMoveMostEmpty();
+      }
+    }
+  }
+
+  for(tile of maxList){ // for every maxfor results chick if corner then border
+    let x = tile.maxTile.x;
     let y = tile.maxTile.y;
-    if (isCorner(x,y)  && tile.maxTile.value == maxList[0].maxTile.value){
+    if (isCorner(x,y)){
       cornerMoves.push(tile.direction);
     }
-    else if (isBorder(x,y) && tile.maxTile.value == maxList[0].maxTile.value ){
+    else if (isBorder(x,y)){
       borderMoves.push(tile.direction);
     }
   }
 
-  console.log(`CornerMoves: ${cornerMoves}`);
-  console.log(`BorderMoves: ${borderMoves}`);
+  //console.log(`CornerMoves: ${cornerMoves}`);
+  //console.log(`BorderMoves: ${borderMoves}`);
     let cmL = cornerMoves.length;
     let bmL = borderMoves.length;
 
-    if (cmL == 0){
-      if (bmL == 0){
-        console.log("MOSTEMPTY")
+    if (cmL == 0){ //no corner moves
+      if (bmL == 0){ //no border moves
+        console.log("MOST EMPTY")
         move = getMoveMostEmpty();
       }
       else{
@@ -106,8 +261,11 @@ const keepLargestInCorner = function(){
     if (cmL > 0){
       move = cornerMoves[0];
     }
+    console.log("CORNER")
     return move;
   }
+
+
 
 const getMoveMostEmpty = function(){
   let numTiles = []
@@ -115,7 +273,7 @@ const getMoveMostEmpty = function(){
   for(let i = 0; i < 4; i++){
     let thisTiles = 0;
     result = game.getResultingPosition(g, i);
-    console.log("result: " + JSON.stringify(result.grid.cells))
+    //console.log("result: " + JSON.stringify(result.grid.cells))
     for(let j = 0; j < result.grid.cells.length; j++){
       for(let k = 0; k < result.grid.cells[j].length; k++){
         if(result.grid.cells[j][k] !== null){
@@ -144,7 +302,7 @@ const getMoveMostEmpty = function(){
       moveFound = true;
     }
   }
-  console.log("best move:" + m)
+  //console.log("best move:" + m)
   return m
 }
 
