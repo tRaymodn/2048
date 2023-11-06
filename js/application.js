@@ -10,6 +10,10 @@ let autoMoving = false;
 document.getElementById('singleMove').addEventListener("click", () => {
   let move = keepLargestInCorner();
       game.move(move);
+      futureHendrix(2, game.grid)
+      console.log(JSON.stringify(futureList) + "length: " + futureList.length + "direction: " + move)
+      console.log("number of true moves: " + t)
+
 })
 
 document.getElementById('autoMove').addEventListener("click", () => {
@@ -27,6 +31,12 @@ document.getElementById('autoMove').addEventListener("click", () => {
     clearInterval(interval)
     autoMoving = false;
   }
+})
+
+document.getElementById('submitInputType').addEventListener("click", () => {
+  let type = document.getElementById("inputType").value
+  game.changeTileInsert(type);
+  document.getElementById('inputType').value = "";
 })
 
 const isCorner = function(x, y){
@@ -111,7 +121,7 @@ const getAllResults = function(g, i){
           tiles.push(result.grid.cells[j][k]);
       }
     }
-  return tiles;
+  return {tiles: tiles, moved: result.moved};
 }
 
 const getOccupiedResults = function(g, i){
@@ -126,6 +136,72 @@ const getOccupiedResults = function(g, i){
   }
   return currOccupied;
 }
+let futureList = []
+let t = 0;
+const futureHendrix = function(times, grid){
+  if(times > 0){
+    for(let i = 0; i < 4; i++){
+      let result = getAllResults(grid, i);
+      console.log(`${i} is ${result.moved} a valid move, iteration:${times}`)
+      if(result.moved){
+        let res = make2dArray(result.tiles)
+        let newg = new Grid(grid.size, res);
+        let unnocupied = newg.availableCells()
+        for(let j = 0; j < unnocupied.length; j++){
+          for(let k = 0; k < 2; k++){
+            switch(k){
+              case 0:
+                let newerg2 = new Grid(grid.size, res);
+                let tile2 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 2);
+                newerg2.insertTile(tile2);
+                if(times === 1){
+                  futureList.push(newerg2);
+                }
+                else{
+                  futureHendrix(times - 1, newerg2);
+                }
+                break;
+              case 1:
+                let newerg4 = new Grid(grid.size, res);
+                let tile4 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 4);
+                newerg4.insertTile(tile4);
+                if(times === 1){
+                  futureList.push(newerg4);
+                }
+                else{
+                  futureHendrix(times - 1, newerg4)
+                }
+                break;
+            }
+          }
+        }
+      }
+
+    }
+  }
+}
+
+const make2dArray = function(array){
+  let size = Math.sqrt(array.length);
+  let newArray = [];
+  let currx = 0;
+  for(let i = 0; i < size; i++){
+    let newRow = []
+    for(let j = 0; j < size; j++){
+      let listItem = array[(i*size) + j]
+      let tile;
+      if(listItem !== null){
+        tile = {position: {x: listItem.x, y: listItem.y}, value: listItem.value};
+      }
+      else{
+        tile = false;
+      }
+      newRow.push(tile);
+    }
+    newArray.push(newRow)
+  }
+  return newArray;
+}
 
 /* takes in a tile and the current board state as an array of tiles. For every move direction, chack if valid move, if so then go through every tile in
 that move to see if any are in the corner and they are the max value. if so, calculate the number of tiles in the row and col and compare them to 
@@ -134,12 +210,11 @@ the current grid. If new is greater than old in either direction, return that mo
 const lockBase = function(allCells, cell){
   let g = game.grid;
   let move = null;
-
   for (let i = 0; i < 4; i++){
     let tiles = getAllResults(g, i);
     //console.log("lockTiles: " + tiles);
-    if (result.moved){
-      for(let tile of tiles){
+    if (tiles.moved){
+      for(let tile of tiles.tiles){
         if(tile !== null && tile.value >= cell.value && isCorner(tile.x,tile.y)){
         //console.log("lockTiles: " + JSON.stringify(tiles));
         let row = tile.x;
@@ -148,7 +223,7 @@ const lockBase = function(allCells, cell){
         let currCounts = countTiles(allCells, row, col);
         let currR = currCounts.r;
         let currC = currCounts.c;
-        let resultCounts = countTiles(tiles, row, col);
+        let resultCounts = countTiles(tiles.tiles, row, col);
         let resultR = resultCounts.r;
         let resultC = resultCounts.c;
         //console.log(currR , currC);
