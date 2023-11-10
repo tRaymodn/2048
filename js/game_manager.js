@@ -195,6 +195,7 @@ GameManager.prototype.setup = function () {
     this.states = [];
     this.moves = [];
     this.tileInsert = "random"
+    this.tileValue = 0;
 
     // Add the initial tiles
     this.addStartTiles();
@@ -218,6 +219,21 @@ GameManager.prototype.addStartTiles = function () {
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
     var value = Math.random() < 0.9 ? 2 : 4;
+    var tile = new Tile(this.grid.randomAvailableCell(), value);
+
+    this.grid.insertTile(tile);
+  }
+};
+
+GameManager.prototype.addRandomTileValue = function (val) {
+  if (this.grid.cellsAvailable()) {
+    var value;
+    if(val == 0){
+      value = Math.random() < 0.9 ? 2 : 4;
+    }
+    else{
+      value = Number(val);
+    }
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -405,22 +421,22 @@ GameManager.prototype.move = function (direction) {
     this.appendState(state, move);
     switch(this.tileInsert){
       case 'random': 
-        this.addRandomTile();
+        this.addRandomTileValue(this.tileValue);
         break;
       case 'tL':
-        this.topLeftInsertTile();
+        this.topLeftInsertTile(this.tileValue);
         break;
       case 'bL': 
-        this.bottomLeftInsertTile();
+        this.bottomLeftInsertTile(this.tileValue);
         break;
       case 'tR':
-        this.topRightInsertTile();
+        this.topRightInsertTile(this.tileValue);
         break;
       case 'bR':
-        this.bottomRightInsertTile();
+        this.bottomRightInsertTile(this.tileValue);
         break;
       default:
-        this.addRandomTile();
+        this.addRandomTile(this.tileValue);
     }
     //this.topLeftInsertTile()
     /*
@@ -467,10 +483,16 @@ GameManager.prototype.changeTileInsert = function(insertStyle){
   this.tileInsert = insertStyle;
 }
 
-GameManager.prototype.topLeftInsertTile = function() {
+GameManager.prototype.topLeftInsertTile = function(val) {
   let anArray = this.grid.availableCells();
-    var value = Math.random() < 0.9 ? 2 : 4;
-    value = 2;
+  console.log("value: " + val + "type: " + typeof(val));
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
     for (let i = 0; i < anArray.length; i++){
           const tile = new Tile({x: anArray[i].x, y: anArray[i].y} , value);
           this.grid.insertTile(tile);
@@ -478,10 +500,16 @@ GameManager.prototype.topLeftInsertTile = function() {
         }
 }
 
-GameManager.prototype.bottomLeftInsertTile = function() {
+GameManager.prototype.bottomLeftInsertTile = function(val) {
   let anArray = this.grid.availableCells();
-  var value = Math.random() < 0.9 ? 2 : 4;
-  value = 2;
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
+  
   var pos = {x: this.size -1, y: 0} //lowest x, largest y available
   for(let i = 0; i < anArray.length; i++){
     if(anArray[i].x < pos.x){
@@ -498,10 +526,15 @@ GameManager.prototype.bottomLeftInsertTile = function() {
   this.grid.insertTile(tile);
 }
 
-GameManager.prototype.topRightInsertTile = function() {
+GameManager.prototype.topRightInsertTile = function(val) {
   let anArray = this.grid.availableCells();
-  var value = Math.random() < 0.9 ? 2 : 4;
-  value = 2;
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
   var pos = {x: 0, y: this.size - 1} //largest x, lowest y available
   for(let i = 0; i < anArray.length; i++){
     if(anArray[i].x > pos.x){
@@ -518,15 +551,29 @@ GameManager.prototype.topRightInsertTile = function() {
   this.grid.insertTile(tile);
 }
 
-GameManager.prototype.bottomRightInsertTile = function(){
+GameManager.prototype.bottomRightInsertTile = function(val){
   let anArray = this.grid.availableCells();
-    var value = Math.random() < 0.9 ? 2 : 4;
-    value = 2;
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
     for (let i = anArray.length - 1; i >= 0; i--){
           const tile = new Tile({x: anArray[i].x, y: anArray[i].y} , value);
           this.grid.insertTile(tile);
           break;
         }
+}
+
+GameManager.prototype.changeTileValue = function(value){
+  if(value == 2 || value == 4){
+    this.tileValue = value;
+  }
+  else{
+    this.tileValue = 0;
+  }
 }
 
 

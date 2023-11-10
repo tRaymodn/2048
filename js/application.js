@@ -53,6 +53,12 @@ document.getElementById('submitInputType').addEventListener("click", () => {
   document.getElementById('inputType').value = "";
 })
 
+document.getElementById('submitValue').addEventListener("click", () => {
+  var number = document.getElementById('inputValue').value;
+  game.changeTileValue(number);
+  document.getElementById("inputValue").value = "";
+})
+
 const isCorner = function(x, y){
   return ((x == 0 && (y == 0 || y == game.size - 1)) ||
           (x == game.size && (y == 0 || y == game.size - 1 )))
