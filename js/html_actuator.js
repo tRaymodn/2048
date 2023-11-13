@@ -91,7 +91,7 @@ HTMLActuator.prototype.addTile = function (tile, boardSize) {
 
   if (tile.value > 2048) classes.push("tile-super");
 
-  this.applyClasses(wrapper, classes, position, boardSize);
+  this.applyClasses(wrapper, classes);
 
   if(boardSize <=8){
     inner.classList.add("tile-inner");
@@ -110,11 +110,11 @@ HTMLActuator.prototype.addTile = function (tile, boardSize) {
     // Make sure that the tile gets rendered in the previous position first
     window.requestAnimationFrame(function () {
       classes[2] = self.positionClass({ x: tile.x, y: tile.y });
-      self.applyClasses(wrapper, classes, {x: tile.x, y: tile.y}, boardSize); // Update the position
+      self.applyClasses(wrapper, classes); // Update the position
     });
   } else if (tile.mergedFrom) {
     classes.push("tile-merged");
-    this.applyClasses(wrapper, classes, position, boardSize);
+    this.applyClasses(wrapper, classes);
 
     // Render the tiles that merged
     tile.mergedFrom.forEach(function (merged) {
@@ -122,7 +122,7 @@ HTMLActuator.prototype.addTile = function (tile, boardSize) {
     });
   } else {
     classes.push("tile-new");
-    this.applyClasses(wrapper, classes, position, boardSize);
+    this.applyClasses(wrapper, classes);
   }
 
   // Add the inner part of the tile to the wrapper
@@ -132,7 +132,7 @@ HTMLActuator.prototype.addTile = function (tile, boardSize) {
   this.tileContainer.appendChild(wrapper);
 };
 
-HTMLActuator.prototype.applyClasses = function (element, classes, tile, boardSize) { // sets class attribute of desired element to the class specified
+HTMLActuator.prototype.applyClasses = function (element, classes) { // sets class attribute of desired element to the class specified
   if(!this.extraTiles.includes(classes[2])){
     if(this.extraTiles.length < 1){ // If no 5 tiles have been created yet, attach the style document to the head of the page to add new class styles
       document.head.appendChild(this.styleElement)
