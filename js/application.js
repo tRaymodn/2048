@@ -38,7 +38,7 @@ document.getElementById('autoMove').addEventListener("click", () => {
       let state = game.getBoardState();
       //console.log(state);
       dir++;
-    }, 20);
+    }, sp);
     autoMoving = true;
   }
   else{
@@ -53,15 +53,9 @@ document.getElementById('submitInputType').addEventListener("click", () => {
   document.getElementById('inputType').value = "";
 })
 
-document.getElementById('submitValue').addEventListener("click", () => {
-  var number = document.getElementById('inputValue').value;
-  game.changeTileValue(number);
-  document.getElementById("inputValue").value = "";
-})
-
 const isCorner = function(x, y){
   return ((x == 0 && (y == 0 || y == game.size - 1)) ||
-          (x == game.size && (y == 0 || y == game.size - 1 )))
+          (x == game.size - 1 && (y == 0 || y == game.size - 1 )))
 }
 
 const isBorder = function(x, y){
@@ -71,7 +65,9 @@ const isBorder = function(x, y){
 const isLockedRow = function(g, r){
   let locked = true;
   for(let i = 0; i < game.size; i++){
-    if(g.cells[r][i] === null){
+    console.log( i, r)
+    //console.log("OURCELL: " + g.cells[i][r].value)
+    if(g.cells[i][r] === null){
       locked = false;
       break;
     }
@@ -82,7 +78,7 @@ return locked;
 const isLockedCol = function(c, tiles){
   let locked = true;
   for(let i = 0; i < game.size; i++){
-    if(tiles[i * game.size + c] === null){
+    if(g.cells[i][col] === null){
       locked = false;
       break;
     }
@@ -100,19 +96,6 @@ const countRow = function(g , row){
     return cnt;
   }
   
-
-
-const getCurrentTiles = function() {
-  let allCells = [];
-  let g = game.grid;
-  for (let i = 0; i < g.cells.length; i++){
-    for (let j = 0; j < g.cells[i].length; j++){
-        allCells.push(g.cells[i][j]);
-    }
-  }
-  return allCells;
-}
-
 const getCurrentOccupiedTiles = function() {
   let currOccupied = [];
   let g = game.grid;
@@ -224,7 +207,7 @@ const bestToWorst = function(tile){
   let ok;
   let meh; 
   let grr;
-  if(tile.x === 0) {
+  if(tile.y === 0) {
     best = 0;
     grr = 2;
   }
@@ -232,7 +215,7 @@ const bestToWorst = function(tile){
     best = 2;
     grr = 0;
   }
-  if (tile.y === 0){
+  if (tile.x === 0){
       ok = 3;
       meh = 1;
     }
@@ -244,21 +227,97 @@ const bestToWorst = function(tile){
     return rank = [best, ok, meh, grr];
   }
 
+  const rowValue = function(g, r){
+    sum = 0;
+    for (let i = 0; i < g.size; i++){
+      if (g.cells[r][i] !== null){
+        sum += g.cells[r][i].value 
+      }
+    }
+    return sum;
+  }
+
+  const loadTiles = function(valid, tile){
+    let g = game.grid
+    let adj = {x: tile.x - 1, y: tile.y};
+    let cnt = 1;
+    let startValue = tile.value
+    //get adj Tile value (only 1 because row and corner)
+    if (tile.x === 0){
+      adj = {x: tile.x + 1, y: tile.y}
+    }
+
+    let initAdj = g.cells[adj.x][adj.y]
+    //go through valid moves
+    for (i of valid){
+      let result = game.getResultingPosition(g, i)
+      let adjTile = result.grid.cells[adj.x][adj.y]
+      let cornerTile = result.grid.cells[tile.x][tile.y]
+      console.log(adjTile, i)
+      if (adjTile !== null && cornerTile !== null && initAdj !== null && initAdj.value < adjTile.value && cornerTile.value >= startValue){
+        return i;
+      }
+      else{
+       
+        if (cnt === valid.length){
+          return valid[0];
+        }
+        cnt++
+      }
+
+    }
+    // check if any moves increase the value of an adj tile in the row (or column)
+    //if so make move
+    //if not return first valid move
+
+    
+  }
+
 
 
 const lockRow = function(tile){
   let g = game.grid;
-  //let row = tile.y;
-  //let col = tile.x;
-  //let thisCount = countRow(g, col);
+  let row = tile.x;
+  let col = tile.y;
+  let thisCount = countRow(g, row);
+  let thisValue = rowValue(g,row);
+
+  let valid = []
   let best = bestToWorst(tile);
-  console.log(`Best ${best}`);
-  for(let i of best){
-    let result = game.getResultingPosition(g, i);
-    //let nextCount = countRow(result.grid, row);
+
+  for (let j of best){
+    let result = game.getResultingPosition(g, j);
     if (result.moved){
+      valid.push(j);
+    }
+  }
+  console.log("LOCKED?" + isLockedRow(g, col))
+ 
+  if (isLockedRow(g,col)){
+    console.log("LOAD")
+    return loadTiles(valid, tile)
+  } else{
+  
+
+
+  let cnt = 1;
+  for(let i of valid){
+    let result = game.getResultingPosition(g, i);
+    lock = isLockedRow(result.grid, col)
+    nextCount = countRow(result.grid, row);
+    nextValue = rowValue(result.grid, row);
+    if (lock || thisCount < nextCount ||  nextValue >= thisValue){
       return i;
     }
+    else{
+      //console.log("cnt: " + cnt)
+      if (cnt === valid.length){
+        return valid[0]
+      }
+     
+    }
+    cnt++
+  }
   }
 }
       
@@ -267,6 +326,8 @@ const lockRow = function(tile){
 or column that tile is located in, if no moves can be made to fill a row or column,  it will make a move to have the most empty tiles.
 if the largest possible next tile is not in a corner, it will find border and corner moves for that tile (i.e., moves that put that largest tile in the
 corner, then the border). if a corner move is avalible, it will make it, if not it will make a border move, if neither, it will make the most empty move. */
+
+//priortizing bottom left
 const keepLargestInCorner = function(){
   let cornerMoves = [];
   let borderMoves = []; 
@@ -302,11 +363,14 @@ const keepLargestInCorner = function(){
   }
 
   let currOccupied = getCurrentOccupiedTiles(); // get current board occupied tiles
+  for(let tile of currOccupied){ // check if max possible tile is in corne
+    
 
-  for(let tile of currOccupied){ // check if max possible tile is in corner
     if (tile.value === maxList[0].maxTile.value && isCorner(tile.x,tile.y)){
+      console.log("MaxTile: " + maxList[0].maxTile.value )
+      console.log(isCorner(tile.x,tile.y))
       move =  lockRow(tile);
-      if (move !== null){
+      if (move != null){
         console.log ("move: "+ move);
         return move;
       }
