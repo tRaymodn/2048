@@ -104,6 +104,7 @@ HTMLActuator.prototype.addTile = function (tile, boardSize) {
     font-size: ${55-boardSize*2.47}px; line-height: ${(gameContainer.offsetWidth - (boardSize * 16 )) / boardSize}px;`)
   }
   inner.textContent = tile.value;
+  //inner.setAttribute("style", `background-image: url("style/wpiCOA.jpg")`)
 
   if (tile.previousPosition) {
     // Make sure that the tile gets rendered in the previous position first

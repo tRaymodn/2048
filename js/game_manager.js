@@ -485,7 +485,6 @@ GameManager.prototype.changeTileInsert = function(insertStyle){
 
 GameManager.prototype.topLeftInsertTile = function(val) {
   let anArray = this.grid.availableCells();
-  console.log("value: " + val + "type: " + typeof(val));
   var value;
   if(val == 0){
     value = Math.random() < 0.9 ? 2 : 4;
@@ -498,6 +497,23 @@ GameManager.prototype.topLeftInsertTile = function(val) {
           this.grid.insertTile(tile);
           break;
         }
+}
+
+ // currently working on this
+GameManager.prototype.topLeftInsertTileRow = function(val){
+  let anArray = this.grid.availableCells();
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
+  for(let i = 0; i < game.size; i++){
+    for(let j = 0; j < game.size; j++){
+      
+    }
+  }
 }
 
 GameManager.prototype.bottomLeftInsertTile = function(val) {
