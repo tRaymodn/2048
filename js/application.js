@@ -61,19 +61,24 @@ const makeBestMove = function(tiles, m){
   let order = [];
   let myOrder;
   if(m == 1){
-    order = [1, 3];
+    order = [1, 3, 3];
   }
   else if(m == 3){
-    order = [3, 1]
+    order = [2, 3, 1]
   }
   else if(m == 0){
-    order = [0, 2];
+    order = [3, 0, 2];
   }
   else{
-    order = [2, 0];
+    order = [2, 0, 0];
   }
   if(!game.getResultingPosition(game.grid, order[0]).moved){
-    myOrder = order[1];
+    if(!game.getResultingPosition(game.grid, order[1]).moved){
+      myOrder = order[2];
+    }
+    else{
+     myOrder = order[1]; 
+    }
   }
   else{
     myOrder = order[0];
@@ -101,14 +106,12 @@ const makeBestMove = function(tiles, m){
       break;
     case "bLR":
       fillAndShift(1, 0);
+      break;
     case "tLC":
       fillAndShift(2, 1);
       break;
     case "tLR":
       fillAndShift(1, 2);
-    default:
-      fillAndShift(1, 2);
-      break;
   }
 
 }
@@ -133,7 +136,7 @@ const makeCheckerboard = function(){
     if(tileList[0].x === tileList[1].x){
       // tiles are on the same column, so should move horizontally
       if(tileList[0].x === g.size - 1){ // if the tiles are in the same column in the final column, move to the left I think
-        makeBestMove(tileList, 3);
+        makeBestMove(tileList, 3); // not really, Im gonna change this to see how it works, but the 3 is gonna have a 2 move as the first option to see if we don't have to go across the board to start making rows/cols
       }
       else{
         makeBestMove(tileList, 1);
@@ -166,94 +169,30 @@ const makeCheckerboard = function(){
 }
 
 const fillAndShift = function(direction, slide){
-  if(game.getResultingPosition(game.grid, direction).moved){
+
+  if(!game.getResultingPosition(game.grid, direction).moved && game.size%2 === 0){
+    game.move(slide)
+    console.log("slide " + slide)
+  }
+  else{ 
     if(game.tileValue == 2){
       game.changeTileValue(4)
     }
     else{
       game.changeTileValue(2);
     }
-    game.move(direction)
-    console.log("mergeRight")
-  }
-  else{ // the row is filled and we are going to slide it to the top
-    console.log(slide)
-    game.move(slide);
-    console.log("slide to top")
-  }
-
-/*
-  if(direction == 1){ // we are going to be merging to the right
     if(game.getResultingPosition(game.grid, direction).moved){
-      if(game.tileValue == 2){
-        game.changeTileValue(4)
-      }
-      else{
-        game.changeTileValue(2);
-      }
       game.move(direction)
-      console.log("mergeRight")
+      console.log("merge " + direction)
     }
-    else{ // the row is filled and we are going to slide it to the top
-      game.move(0);
-      console.log("slide to top")
-    }
-    
-  }
-  else if(direction == 3){
-    if(game.getResultingPosition(game.grid, direction).moved){
-      if(game.tileValue == 2){
-        game.changeTileValue(4)
-      }
-      else{
-        game.changeTileValue(2);
-      }
-      game.move(direction)
-      console.log("mergeLeft")
-    }
-    else{ // the row is filled and we are going to slide it to the top
-      game.move(0);
-      console.log("slide to top")
-    }
-    
-  }
-  else if(direction == 0){ // we are going to be merging up
-    if(game.getResultingPosition(game.grid, direction).moved){
-      if(game.tileValue == 2){
-        game.changeTileValue(4)
-      }
-      else{
-        game.changeTileValue(2);
-      }
-      game.move(direction)
-      console.log("mergeUp")
-    }
-    else{ // the row is filled and we are going to slide it to the left
-      game.move(3);
-      console.log("slide to left")
-    }
-    
-  }
-  else{ // we are going to be merging down
-    if(game.getResultingPosition(game.grid, direction).moved){
-      if(game.tileValue == 2){
-        game.changeTileValue(4)
-      }
-      else{
-        game.changeTileValue(2);
-      }
-      game.move(direction)
-      console.log("merge down")
-    }
-    else{ // the column is filled and we are going to slide it to the left (we can't move down)
-      game.move(3)
-      console.log("slide left")
+    else{
+      console.log("slide: " + slide)
+      game.move(slide);
     }
   }
-  */
   setTimeout(()=> {
     fillAndShift(direction, slide);
-  }, 1000);
+  }, 100);
 }
 
 // this function changes the tile input style based on the position of the tiles in the starting board
@@ -280,7 +219,19 @@ const checkerBoardStartingTileValue = function(tiles, direction){
   let returnString;
   if(direction == 1 || direction == 3){ // column
     console.log("column")
-    if(tile1.y + 1 == tile2.y || tile1.y - 1 == tile2.y){ // if tiles are right next to each other
+    if(tile1.y == tile2.y && (tile1.y == 0 || tile1.y == game.size-1)){ // they are on the same row and are actually going to be making a row
+      if(direction == 3){
+        game.changeTileInsert("bRR");
+        returnString = "bRR"
+      }
+      else{
+        game.changeTileInsert("bL")
+        returnString = "bLR"
+      }
+      getTileVal(tile1, tile2);
+      console.log("endrow")
+    }
+    else if(tile1.y + 1 == tile2.y || tile1.y - 1 == tile2.y){ // if tiles are right next to each other
       console.log("adjacent")
       if(tile2.y == 0){ // if the tiles are against the top of the  board
         if(direction == 3){
@@ -365,14 +316,26 @@ const checkerBoardStartingTileValue = function(tiles, direction){
     }
     console.log("tile1.x:" + tile1.x, "tile2.x: " + tile2.x)
     console.log("row")
-    if(tile1.x + 1 == tile2.x || tile1.x - 1 == tile2.x){ // if tiles are right next to each other
+    if(tile1.x == tile2.x && (tile1.x == 0 || tile1.x == game.size-1)){ // they are on the same column and are actually going to be making a row
+      if(direction == 0){
+        game.changeTileInsert("bR");
+        returnString = "bRC"
+      }
+      else{
+        game.changeTileInsert("tR");
+        returnString = "tRC"
+      }
+      getTileVal(tile1, tile2);
+      console.log("endrow")
+    }
+    else if(tile1.x + 1 == tile2.x || tile1.x - 1 == tile2.x){ // if tiles are right next to each other
       if(tile2.x == 0){ // if the tiles are against the left side of the  board
         if(direction == 0){
-          game.changeTileInsert("tR");
+          game.changeTileInsert("tRR");
           returnString = "tRR";
         }
         else{
-          game.changeTileInsert("bR");
+          game.changeTileInsert("bRR");
           returnString = "bRR";
         }
         getTileVal(tile1, tile2);
@@ -380,24 +343,24 @@ const checkerBoardStartingTileValue = function(tiles, direction){
       }
       else{ // if the tiles are against the right side of the board
         if(direction == 0){
-          game.changeTileInsert("tL");
+          game.changeTileInsert("tLR");
           returnString = "tLR";
         }
         else{
-          game.changeTileInsert("bL");
+          game.changeTileInsert("bLR");
           returnString = "bLR";
         }
-        getTileVal(tile2, tile1);
+        getTileVal(tile1, tile2);
         console.log("right side/middle")
       }
     }
     else if(tile1.x == game.size - 1 && tile2.x == 0){ // if the two tiles are on opposite ends
       if(direction == 0){
-        game.changeTileInsert("tL");
+        game.changeTileInsert("tLR");
         returnString = "tLR";
       }
       else{
-        game.changeTileInsert("bL");
+        game.changeTileInsert("bLR");
         returnString = "bLR";
       }
       game.changeTileValue(2);
@@ -405,23 +368,23 @@ const checkerBoardStartingTileValue = function(tiles, direction){
     }
     else if(tile1.x == game.size - 1){ // if there is a tile at the right side of the board
       if(direction == 0){
-        game.changeTileInsert("tL");
+        game.changeTileInsert("tLR");
         returnString = "tLR";
       }
       else{
-        game.changeTileInsert("bL");
+        game.changeTileInsert("bLR");
         returnString = "bLR";
       }
-      getTileVal(tile2, tile1);
+      getTileVal(tile1, tile2);
       console.log("tile right")
     }
     else if(tile2.x == 0){ // if there is a tile a the left side of the board
       if(direction == 0){
-        game.changeTileInsert("tR");
+        game.changeTileInsert("tRR");
         returnString = "tRR";
       }
       else{
-        game.changeTileInsert("bR");
+        game.changeTileInsert("bRR");
         returnString = "bRR";
       }
       getTileVal(tile1, tile2);
@@ -429,11 +392,11 @@ const checkerBoardStartingTileValue = function(tiles, direction){
     }
     else{ // there are no tiles at the corners of the board
       if(direction == 0){
-        game.changeTileInsert("tL");
+        game.changeTileInsert("tLR");
         returnString = "tLR";
       }
       else{
-        game.changeTileInsert("bL");
+        game.changeTileInsert("bLR");
         returnString = "bLR";
       }
       getTileVal(tile2, tile1);

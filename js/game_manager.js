@@ -435,40 +435,21 @@ GameManager.prototype.move = function (direction) {
       case 'bR':
         this.bottomRightInsertTile(this.tileValue);
         break;
+      case 'tLR':
+        this.topLeftInsertTileRow(this.tileValue);
+        break;
+      case 'bLR':
+        this.bottomLeftInsertTileRow(this.tileValue);
+        break;
+      case 'tRR':
+        this.topRightInsertTileRow(this.tileValue);
+        break;
+      case 'bRR':
+        this.bottomRightInsertTileRow(this.tileValue);
+        break;
       default:
         this.addRandomTile(this.tileValue);
     }
-    //this.topLeftInsertTile()
-    /*
-    //this.cornerTileInsertRotating(direction);
-    console.log("direction: " + direction)
-    let adjTiles = this.adjacentTiles(1,1);
-    if(adjTiles.left != null){
-      console.log("left: " + adjTiles.left.value + "\n");
-    }else{
-      console.log("No tile at" + "(LEFT) " + "\n");
-    }
-    if(adjTiles.right != null){
-      console.log("Right: " + adjTiles.right.value + "\n");
-    }else{
-      console.log("No tile at "  + " (RIGHT) " + "\n");
-    }
-    if(adjTiles.up != null){
-      console.log("Up: " + adjTiles.up.value + "\n");
-    }else{
-      console.log("No tile at "  + " (UP) " + "\n");
-    }
-    if(adjTiles.down != null){
-      console.log("Down: " + adjTiles.down.value + "\n");
-    }else{
-      console.log("No tile at " + " (DOWN) " + "\n");
-    }
-    let occupiedCellsArr = this.getOccupiedCells();
-    let maxTile = this.getLargestCell(occupiedCellsArr);
-      for(let i = 0; i < maxTile.length; i++){
-        console.log("Max Tile X: " + maxTile[i].x + " Max Tile Y: " + maxTile[i].y + " Max Tile Value: " + maxTile[i].value);
-      }
-      */
     if (!this.movesAvailable()) {
       //this.download("moves.txt", this.movesToString())
       //this.download("states.txt", this.statesToString())
@@ -509,11 +490,20 @@ GameManager.prototype.topLeftInsertTileRow = function(val){
   else{
     value = Number(val);
   }
-  for(let i = 0; i < game.size; i++){
-    for(let j = 0; j < game.size; j++){
-      
+  var pos = {x: this.size -1, y: this.size - 1} //lowest x, lowest y available
+  for(let i = 0; i < anArray.length; i++){
+    if(anArray[i].y < pos.y){
+      pos.x = anArray[i].x
+      pos.y = anArray[i].y
+    }
+    else if(anArray[i].y === pos.y){
+      if(anArray[i].x < pos.x){
+        pos.y = anArray[i].y;
+      }
     }
   }
+  const tile = new Tile({x: pos.x, y: pos.y}, value);
+  this.grid.insertTile(tile);
 }
 
 GameManager.prototype.bottomLeftInsertTile = function(val) {
@@ -535,6 +525,57 @@ GameManager.prototype.bottomLeftInsertTile = function(val) {
     else if(anArray[i].x === pos.x){
       if(anArray[i].y > pos.y){
         pos.y = anArray[i].y;
+      }
+    }
+  }
+  const tile = new Tile({x: pos.x, y: pos.y}, value);
+  this.grid.insertTile(tile);
+}
+
+GameManager.prototype.bottomLeftInsertTileRow = function(val) {
+  let anArray = this.grid.availableCells();
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
+  
+  var pos = {x: this.size -1, y: 0} //lowest x, largest y available
+  for(let i = 0; i < anArray.length; i++){
+    if(anArray[i].y > pos.y){
+      pos.x = anArray[i].x
+      pos.y = anArray[i].y
+    }
+    else if(anArray[i].y === pos.y){
+      if(anArray[i].x < pos.x){
+        pos.x = anArray[i].x;
+      }
+    }
+  }
+  const tile = new Tile({x: pos.x, y: pos.y}, value);
+  this.grid.insertTile(tile);
+}
+
+GameManager.prototype.topRightInsertTileRow = function(val) {
+  let anArray = this.grid.availableCells();
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
+  var pos = {x: 0, y: this.size - 1} //largest x, lowest y available
+  for(let i = 0; i < anArray.length; i++){
+    if(anArray[i].y < pos.y){
+      pos.x = anArray[i].x
+      pos.y = anArray[i].y
+    }
+    else if(anArray[i].y === pos.y){
+      if(anArray[i].x > pos.x){
+        pos.x = anArray[i].x;
       }
     }
   }
@@ -581,6 +622,31 @@ GameManager.prototype.bottomRightInsertTile = function(val){
           this.grid.insertTile(tile);
           break;
         }
+}
+
+GameManager.prototype.bottomRightInsertTileRow = function(val) {
+  let anArray = this.grid.availableCells();
+  var value;
+  if(val == 0){
+    value = Math.random() < 0.9 ? 2 : 4;
+  }
+  else{
+    value = Number(val);
+  }
+  var pos = {x: 0, y: 0} //largest x, largest y available
+  for(let i = 0; i < anArray.length; i++){
+    if(anArray[i].y > pos.y){
+      pos.x = anArray[i].x
+      pos.y = anArray[i].y
+    }
+    else if(anArray[i].y === pos.y){
+      if(anArray[i].x > pos.x){
+        pos.x = anArray[i].x;
+      }
+    }
+  }
+  const tile = new Tile({x: pos.x, y: pos.y}, value);
+  this.grid.insertTile(tile);
 }
 
 GameManager.prototype.changeTileValue = function(value){
