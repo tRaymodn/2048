@@ -350,7 +350,7 @@ const checkerBoardStartingTileValue = function(tiles, direction){
           game.changeTileInsert("bLR");
           returnString = "bLR";
         }
-        getTileVal(tile1, tile2);
+        getTileVal(tile2, tile1);
         console.log("right side/middle")
       }
     }
@@ -375,7 +375,7 @@ const checkerBoardStartingTileValue = function(tiles, direction){
         game.changeTileInsert("bLR");
         returnString = "bLR";
       }
-      getTileVal(tile1, tile2);
+      getTileVal(tile2, tile1);
       console.log("tile right")
     }
     else if(tile2.x == 0){ // if there is a tile a the left side of the board
