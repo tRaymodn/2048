@@ -57,6 +57,12 @@ document.getElementsByClassName('heading')[0].addEventListener("click", ()=> {
   makeCheckerboard();
 })
 
+document.getElementById("submitValue").addEventListener("click", () => {
+  let val = document.getElementById("inputValue").value
+  game.changeTileValue(val);
+  document.getElementById('inputValue').value = "";
+})
+
 const makeBestMove = function(tiles, m){
   let order = [];
   let myOrder;
@@ -88,32 +94,42 @@ const makeBestMove = function(tiles, m){
     t = checkerBoardStartingTileValue(tiles, myOrder)
   }
   game.move(myOrder)
+  let f = "checker"; // make some way to change this in the future to be able to change between different modes of inserting tiles
   switch(t){
     case "tRR":
-      fillAndShift(3, 2);
+      runRepeating([3,2], f)
       break;
     case "tRC":
-      fillAndShift(2, 3);
+      runRepeating([2,3], f)
       break;
     case "bRC":
-      fillAndShift(0, 3);
+      runRepeating([0,3], f)
       break;
     case "bRR":
-      fillAndShift(3, 0);
+      runRepeating([3,0], f)
       break;
     case "bLC":
-      fillAndShift(0, 1);
+      runRepeating([0,1], f)
       break;
     case "bLR":
-      fillAndShift(1, 0);
+      runRepeating([1,0], f)
       break;
     case "tLC":
-      fillAndShift(2, 1);
+      runRepeating([2,1], f)
       break;
     case "tLR":
-      fillAndShift(1, 2);
+      runRepeating([1,2], f)
   }
 
+}
+
+const runRepeating = function(inputs, func){
+  if(func == "checker"){
+    fillAndShift(inputs[0], inputs[1]);
+  }
+  else if(func == "switch"){
+    fillSwitchShift(inputs[0], inputs[1])
+  }
 }
 
 const makeCheckerboard = function(){
@@ -193,6 +209,47 @@ const fillAndShift = function(direction, slide){
   setTimeout(()=> {
     fillAndShift(direction, slide);
   }, 100);
+}
+
+const fillSwitchShift = function(direction, slide){
+
+  let opposite;
+    switch(direction){
+      case 0:
+        opposite = 2;
+        break;
+      case 1:
+        opposite = 3;
+        break;
+      case 2:
+        opposite = 0;
+        break;
+      case 3:
+        opposite = 1;
+        break;
+    }
+
+  if(game.tileValue == 2){
+    game.changeTileValue(4);
+  }
+  else{
+    game.changeTileValue(2);
+  }
+  if(game.getResultingPosition(game.grid, direction).moved){
+    game.move(direction);
+    console.log("merge " + direction)
+  }
+  else if(game.getResultingPosition(game.grid, opposite).moved){
+    game.move(opposite);
+    console.log("merge (opposite) " + opposite);
+  }
+  else{
+    game.move(slide);
+    console.log("slide " + slide);
+  }
+  setTimeout(() => {
+    fillSwitchShift(opposite, slide);
+  }, 100)
 }
 
 // this function changes the tile input style based on the position of the tiles in the starting board
