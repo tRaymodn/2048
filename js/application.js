@@ -282,7 +282,7 @@ const checkerBoardStartingTileValue = function(tiles, direction){
         returnString = "bRR"
       }
       else{
-        game.changeTileInsert("bL")
+        game.changeTileInsert("bLR")
         returnString = "bLR"
       }
       getTileVal(tile1, tile2);
@@ -315,30 +315,6 @@ const checkerBoardStartingTileValue = function(tiles, direction){
         getTileVal(tile2, tile1);
         console.log("middle/bottom")
       }
-    }
-    else if(tile1.y == game.size - 1 && tile2.y == 0){ // if the two tiles are on opposite ends
-      if(direction == 3){
-        game.changeTileInsert("tL");
-        returnString = "tLC";
-      }
-      else{
-        game.changeTileInsert("tR");
-        returnString = "tRC";
-      }
-      game.changeTileValue(2);
-      console.log("opposite")
-    }
-    else if(tile1.y == game.size - 1){ // if there is a tile at the bottom of the board
-      if(direction == 3){
-        game.changeTileInsert("tL");
-        returnString = "tLC";
-      }
-      else{
-        game.changeTileInsert("tR");
-        returnString = "tRC";
-      }
-      getTileVal(tile2, tile1);
-      console.log("bottom")
     }
     else if(tile2.y == 0){ // if there is a tile a the top of the board
       if(direction == 3){
@@ -410,30 +386,6 @@ const checkerBoardStartingTileValue = function(tiles, direction){
         getTileVal(tile2, tile1);
         console.log("right side/middle")
       }
-    }
-    else if(tile1.x == game.size - 1 && tile2.x == 0){ // if the two tiles are on opposite ends
-      if(direction == 0){
-        game.changeTileInsert("tLR");
-        returnString = "tLR";
-      }
-      else{
-        game.changeTileInsert("bLR");
-        returnString = "bLR";
-      }
-      game.changeTileValue(2);
-      console.log("opposite sides")
-    }
-    else if(tile1.x == game.size - 1){ // if there is a tile at the right side of the board
-      if(direction == 0){
-        game.changeTileInsert("tLR");
-        returnString = "tLR";
-      }
-      else{
-        game.changeTileInsert("bLR");
-        returnString = "bLR";
-      }
-      getTileVal(tile2, tile1);
-      console.log("tile right")
     }
     else if(tile2.x == 0){ // if there is a tile a the left side of the board
       if(direction == 0){
@@ -527,6 +479,7 @@ const countRow = function(g , row){
     return cnt;
   }
   
+  // returns 1d array of tiles that are not null
 const getCurrentOccupiedTiles = function() {
   let currOccupied = [];
   let g = game.grid;
@@ -540,6 +493,7 @@ const getCurrentOccupiedTiles = function() {
   return currOccupied;
 }
 
+// returns 1d array of tiles and boolean whether it moved or not
 const getAllResults = function(g, i){
   let tiles = [];
     result = game.getResultingPosition(g, i);
@@ -551,6 +505,7 @@ const getAllResults = function(g, i){
   return {tiles: tiles, moved: result.moved};
 }
 
+// returns only tiles that are occupied after a move and whether it moved or not
 const getOccupiedResults = function(g, i){
   let currOccupied = [];
   result = game.getResultingPosition(g, i);
@@ -669,7 +624,7 @@ const bestToWorst = function(tile){
     return sum;
   }
 
-  const loadTile = function(grid, tile){
+  const loadTile = function(grid, tile){ // needs some lovin
     let pos = {x: tile.x, y: tile.y};
     futureHendrix(1, grid);
     for(let future of futureList){
@@ -683,7 +638,7 @@ const bestToWorst = function(tile){
     
   }
 
-  const loadTiles = function(valid, tile){// loading tiles with preference to corner rather than how it is now
+  const loadTiles = function(valid, tile){// loading tiles with preference to corner rather than how it is now and lovin'
    
       let startValue = rowValue(game.grid, tile.y);
       let startCount = countRow(game.grid, tile.y);
@@ -741,7 +696,7 @@ const bestToWorst = function(tile){
       
       
 }
-const lockRow = function(tile){
+const lockRow = function(tile){ //being worked
   let g = game.grid;
   //let row = tile.y;
   //let col = tile.x;
@@ -880,7 +835,7 @@ const keepLargestInCorner = function(){
     }
     console.log("CORNER")
     return move;
-  }
+}
 
 
 
