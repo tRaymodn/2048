@@ -310,7 +310,7 @@ GameManager.prototype.createGridHTML = function(){
     for(let j = 0; j < this.size; j++){
       let cell = document.createElement('div');
       cell.setAttribute('class', 'grid-cell');
-      if(this.size > 8 ){
+      if(this.size > 6 ){
         
         cell.setAttribute('style', `width: ${(gameContainer.offsetWidth - (this.size * 16 )) / this.size}px; height: ${(gameContainer.offsetHeight - (this.size * 16 ))/this.size}px;`);
       }
@@ -322,7 +322,7 @@ GameManager.prototype.createGridHTML = function(){
     
     
   }
-  if(this.size  <= 8){
+  if(this.size  <= 6){
   gameContainer.setAttribute('style', `width: ${(121 * this.size) + 15}px; height:${(121 * this.size) + 15}px;`);
   }
 }

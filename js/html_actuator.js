@@ -44,7 +44,7 @@ HTMLActuator.prototype.setPositionClasses = function(grid){
   let tileX;
   let tileY;
   let flag = false;
-  if(grid.size > 8){
+  if(grid.size > 6){
     flag = true;
   }
   for(let i = 0; i < grid.size; i++){
@@ -93,7 +93,7 @@ HTMLActuator.prototype.addTile = function (tile, boardSize) {
 
   this.applyClasses(wrapper, classes);
 
-  if(boardSize <=8){
+  if(boardSize <=6){
     inner.classList.add("tile-inner");
   }
   else{
