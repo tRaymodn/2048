@@ -22,18 +22,18 @@ speedInput.value = newSpeed;
 });
 
 document.getElementById('singleMove').addEventListener("click", () => {
-  let move = keepLargestInCorner();
+  let move = scoreboard();
       game.move(move);
       //futureHendrix(2, game.grid)
       //console.log(JSON.stringify(futureList) + "length: " + futureList.length + "direction: " + move)
-      console.log("number of true moves: " + t)
+      //console.log("number of true moves: " + t)
 
 })
 
 document.getElementById('autoMove').addEventListener("click", () => {
   if(!autoMoving){
     interval = setInterval(() => {
-      let move = keepLargestInCorner();
+      let move = scoreboard();
       game.move(move);
       let state = game.getBoardState();
       //console.log(state);
@@ -477,26 +477,22 @@ const isLockedCol = function(c, tiles){
   return locked;
 }
 
-const getRow = function (g, tile){
+const getRow = function (g, r){
   let arr = []
-  let x = tile.x;
-  let y = tile.y;
-  if(x == 0){
-    for (let i = 0; i < game.size; i++){
-    if(g.cells[i][y] !== null){
-      arr.push(g.cells[i][y])
-      }
+  for (let i = 0; i < g.size; i++){
+      arr.push(g.cells[i][r])
     }
-  } else{
-    for (let i = game.size - 1; i >= 0; i--){
-      if(g.cells[i][y] !== null){
-        arr.push(g.cells[i][y])
-        }
-      }
-  }
-  
   return arr;
 }
+
+const getRowReverse = function (g, r){
+  let arr = []
+  for (let i = g.size - 1; i >= 0; i--){
+      arr.push(g.cells[i][r])
+    }
+  return arr;
+}
+
 
 const countRow = function(g , row){
   let cnt = 0;
@@ -643,16 +639,16 @@ const bestToWorst = function(tile){
     return rank = [best, ok, meh, grr];
   }
 
-  const rowValue = function(g, r){
+  const rowValue = function(arr){
     sum = 0;
-    for (let i = 0; i < g.size; i++){
-      if (g.cells[i][r] !== null){
-        sum += g.cells[i][r].value 
+    for (let i = 0; i < arr.length; i++){
+      if(arr[i] != null){
+        sum += arr[i].value;
       }
     }
     return sum;
   }
-
+  /*
   const loadTile = function(grid, tile){ // needs some lovin
     let pos = {x: tile.x, y: tile.y};
     futureHendrix(1, grid);
@@ -775,10 +771,10 @@ const lockRow = function(tile){ //being worked
 }
       
 
-/* Prefaces putting largest tile in the corner, if the largest possible tile is already on the board and in a corner, it will move to lock out either a row
+Prefaces putting largest tile in the corner, if the largest possible tile is already on the board and in a corner, it will move to lock out either a row
 or column that tile is located in, if no moves can be made to fill a row or column,  it will make a move to have the most empty tiles.
 if the largest possible next tile is not in a corner, it will find border and corner moves for that tile (i.e., moves that put that largest tile in the
-corner, then the border). if a corner move is avalible, it will make it, if not it will make a border move, if neither, it will make the most empty move. */
+corner, then the border). if a corner move is avalible, it will make it, if not it will make a border move, if neither, it will make the most empty move.
 
 //priortizing bottom left
 const keepLargestInCorner = function(){
@@ -906,40 +902,232 @@ const getMoveMostEmpty = function(){
   //console.log("best move:" + m)
   return m
 }
+*/
+const points = function(grid, dir){
+  let lg = 0; // largest in corner
+  let des = 0; // descending order
+  let ld = 0; // loading tiles
+  let lk = 0; // locking row
+  let mt = 0; // maintain stucture
+  let mrg = 0; // merges 
+  let ourTile;
+  let ourRow;
+  let currMax = 0;
 
-const keepChain = function(){
-  /* I am going for my chain, which starts in the bottom right corner and extends to the left to start and working up the board
-  So ideally, I want to keep the highest value tile at the last(?) position in the array and I want following moves to build up the next highest value in the chain.
-  how to represent each value in the chain? -
-  check to see whether the value in the corner is the highest value
-  consecutively check the tiles, according to their positions in the array based on what the chain should look like- 
-  i.e is the second tile that is part of the chain the second-highest value on the board?
-  if so, then we need to check the next value in the chain.
-  going like this, once we get to a value along the shape of the chain that does not fit with our chain structure, we try to build up that value.
-  Maybe that means taking the next move that increases the value of that particular tile (or maybe the tiles surrounding it)
-  We want to merge things up in the chain in a particular direction so as to not disrupt the basic structure
-  - - - >
-  | - - -
-  - - - |
-  | - - -
-  */
-
-  
-  // check chain values - positions are: (grid) [3][3], [3][2], [3][1], [3][0], [2][3]... etc for MY chain. with the root tile being at grid.cells[3][3]
-  let flag = false;
-  let previousTile = game.grid.cells[3][3]; // need to account for when there is no tile here, such as in the beginning of the game, or when we have to move away
-  if(previousTile === null){
-    previousTile = {value: 0}
-  }
-  console.log(cornerTile)
-  for(let i = 3; i >=0; i--){
-    for(let j = 3; j >=0; j--){
-      let chainTile = game.grid.cells[i][j]; // this should represent the current tile in MY defined chain
-      // maybe go through the shape of the chain until we find a value later in the chain that is larger than a value earlier in the chain, then we know where to dump stuff
-      if(chainTile.value > previousTile.value){
-        flag = true // when this flag is set, then we need to start pumping the previous value, because it is messing up the chain
-      }
+  let pos1 = game.grid.getMaxPos()
+  for (let g of pos1){
+    if (isCorner(g)){
+      currMax = g.value;
+      ourRow = g.position.y 
+      break;
     }
   }
+  if (!ourRow){
+    ourRow = pos1[0].y;
+  }
+  
+
+  /*largest in corner
+    -get largest tile, is it in the corner
+  |Score +++++
+  */
+  let pos = grid.getMaxPos()
+  for (let p of pos){
+    if (isCorner(p.x, p.y)){
+      if (currMax < p.value){
+        lg = 10;
+      } else {
+        lg = 5;
+      }
+      ourTile = p;
+      break;
+      
+    }
+    lg = 0;
+  }
+  if(!ourTile){
+    ourTile = pos[0]
+  }
+   /*
+  Descecnding order from corner
+    -only if largest in corner, start corner and check value of next with points for higher chains
+  | Score ++++
+  */ 
+
+
+  let row;
+  let multiplier = 1;
+
+  if (lg > 4){
+    let cornerCol = ourTile.x
+  
+    if(cornerCol == 0){
+      row = getRow(grid, ourTile.y);
+    } else{
+      row = getRowReverse(grid, ourTile.y)
+    }
+    //console.log(ourTile)
+   
+    //console.log(ourRow)
+    //console.log(row);
+    //console.log(grid); 
+
+    /*
+    HAVE MULTIPLIER EXTEND IN CHAIN FASHION 
+    */
+    for (let i = 1; i < row.length; i++){
+      if(row[i - 1] == null|| row[i] == null){
+        break;
+      }
+      let prev = row[i - 1].value
+      let curr = row[i].value
+      if(prev >= curr){
+        multiplier++
+      }
+    }
+    if (multiplier != 1){
+      des = 2;
+    } else{
+      des = 0;
+    }
+  }
+ /*
+  can we load any tiles
+  -only adventageous given both above 
+  | Score +++ given chain struc
+*/
+
+  if (lg > 4 && des == 1){
+    let aRow = getRow(game.grid, ourRow);
+  
+    let initSum = rowValue(aRow);
+    let nextSum = rowValue(row);
+    if (nextSum > initSum){
+      ld = 3;
+    }
+    //does a move change the value of a previoulsy defined structure
+  }
+
+ /*
+  can we Lock Row
+    -good fallback regardless of above
+  | If all previous true Score +++, if any above not true Score +++++
+  */
+  let lockedCurr = isLockedRow(game.grid, ourRow);
+  let lockedNext = isLockedRow(grid, ourTile.y);
+
+//can prob check if previous coinditions are true here 
+
+  if(lockedCurr && !lockedNext){
+    lk = -1;
+    //detrimentScore
+  }
+  if (lockedCurr && lockedNext){
+    lk = 1;
+  }
+  if (!lockedCurr && lockedNext){
+    lk = 2;
+  }
+
+   /*
+  Can we maintain the struture
+  -Always want to if can, if doesnt large score detriment
+  |score +++++ if not score-------
+  */
+
+  // want to preface edge if not corner for most space with chain. 
+  let row1 = getRow(grid, ourTile.y);
+  //row1 get msx 
+  let i;
+  i = getRowMaxIndex(row1);
+  if (i >= row1.length / 2){
+    row1 = getRowReverse(grid, ourTile.y);
+    i = getRowMaxIndex(row1);
+  }
+
+  let multiplier1 = 1;
+    for (let j = i; j < grid.size; j++){
+      if(row1[j] == null|| row1[j - 1] == null){
+        break;
+      }
+      let prev = row1[j - 1].value
+      let curr = row1[j].value
+      if(prev >= curr){
+        multiplier1++
+      }
+    }
+  
+
+    if (multiplier1 > multiplier){
+      mt = 0
+    }
+    if (multiplier1 == multiplier){
+      mt = 1
+    }
+    if (multiplier > multiplier1){
+      mt = 3
+    }
+ /*
+  can we increase Row Value
+  -always want to try to get larger tiles if possible, unless to trap a smaller tile 
+  score +   
+
+
+*/
+console.log("Lg:", lg, "des", des , "Multip" , multiplier, "Load" ,ld, "LOCK" , lk, "Maintain", mt);
+//console.log(dir);
+
+let eq =  lg + (multiplier *des) + (ld +  lk) * mt
+    return eq;
 
 }
+
+const getRowMaxIndex = function(tiles){
+  let max = Number.MIN_VALUE
+  let pos;
+  for (let i = 0; i < tiles.length; i++){
+    if(tiles[i] != null && tiles[i].value > max){
+      max = tiles[i].value;
+      pos = i
+    }
+  }
+  return pos;
+}
+
+const getValidMoves = function(){
+  let valid = [];
+  for (let i = 0; i < 4; i++){
+    let result = game.getResultingPosition(game.grid, i);
+    if (result.moved){
+      valid.push(i);
+    }
+  }
+  return valid;
+}
+
+
+const scoreboard = function(){
+  let moves = getValidMoves()
+  let P = []
+  let best = 0
+  let move;
+
+  for (let i of moves){
+    let result = game.getResultingPosition(game.grid, i);
+    let p = points(result.grid, i); //int
+    P.push(p)
+  }
+
+  // right now the values might be the same for the score, in which we will prefer left. 
+  //eventually moves will very very rarely have the same value.
+  console.log("MOVES: " + moves)
+  for (let k = 0; k < P.length; k++){
+    if ( P[k] >= best){
+      best = P[k]
+      move =  moves[k]
+    }
+  } 
+  console.log("POINTS:" + P);
+  return move;
+}
+
