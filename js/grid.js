@@ -115,3 +115,25 @@ Grid.prototype.serialize = function () {
     cells: cellState
   };
 };
+
+Grid.prototype.getMaxPos = function(){
+  let max = 0;
+  let pos = []
+  for(let i = 0; i < this.cells.length; i++){
+    for (let j = 0; j < this.cells[i].length; j++){
+      if (this.cells[i][j] != null && this.cells[i][j].value > max){
+        max = this.cells[i][j].value;
+      } 
+    }
+  }
+
+  for(let k = 0; k < this.cells.length; k++){
+    for (let l = 0; l < this.cells[k].length; l++){
+      if (this.cells[k][l] != null && max == this.cells[k][l].value){
+        pos.push(this.cells[k][l])
+      }
+
+    }
+  }
+  return pos;
+}
