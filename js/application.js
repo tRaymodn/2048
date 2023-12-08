@@ -63,6 +63,7 @@ document.getElementById("submitValue").addEventListener("click", () => {
   document.getElementById('inputValue').value = "";
 })
 
+// Based on the tiles on the board and the move taken, runs runRepeating() with the correct direction and slide
 const makeBestMove = function(tiles, m){
   let order = [];
   let myOrder;
@@ -94,7 +95,7 @@ const makeBestMove = function(tiles, m){
     t = checkerBoardStartingTileValue(tiles, myOrder)
   }
   game.move(myOrder)
-  let f = "checker"; // make some way to change this in the future to be able to change between different modes of inserting tiles
+  let f = "switch"; // make some way to change this in the future to be able to change between different modes of inserting tiles
   switch(t){
     case "tRR":
       runRepeating([3,2], f)
@@ -128,10 +129,11 @@ const runRepeating = function(inputs, func){
     fillAndShift(inputs[0], inputs[1]);
   }
   else if(func == "switch"){
-    fillSwitchShift(inputs[0], inputs[1])
+    fillSwitchShift(inputs[0], inputs[1], 2)
   }
 }
 
+// Makes the best starting move from a valid position (makeBestMove()) based on the initial position of the tiles
 const makeCheckerboard = function(){
   let g = game;
   let cells = g.grid.cells;
@@ -147,7 +149,7 @@ const makeCheckerboard = function(){
     console.log("Can only run checkerboard from an initial starting state of a game");
     return;
   }
-  else{
+  else{ // Function is being run from a state with only two tiles on it
     console.log(tileList)
     if(tileList[0].x === tileList[1].x){
       // tiles are on the same column, so should move horizontally
@@ -211,7 +213,7 @@ const fillAndShift = function(direction, slide){
   }, 100);
 }
 
-const fillSwitchShift = function(direction, slide){
+const fillSwitchShift = function(direction, slide, time){
 
   let opposite;
     switch(direction){
@@ -228,18 +230,18 @@ const fillSwitchShift = function(direction, slide){
         opposite = 1;
         break;
     }
-
-  if(game.tileValue == 2){
-    game.changeTileValue(4);
-  }
-  else{
-    game.changeTileValue(2);
-  }
+  /*
   if(game.getResultingPosition(game.grid, direction).moved){
     game.move(direction);
     console.log("merge " + direction)
   }
   else if(game.getResultingPosition(game.grid, opposite).moved){
+    if(game.tileValue == 2){
+      //game.changeTileValue(4);
+    }
+    else{
+      game.changeTileValue(2);
+    }
     game.move(opposite);
     console.log("merge (opposite) " + opposite);
   }
@@ -247,10 +249,37 @@ const fillSwitchShift = function(direction, slide){
     game.move(slide);
     console.log("slide " + slide);
   }
+  */
+  if( game.tileValue == 2){
+    game.changeTileValue(4);
+  }
+  else{
+    game.changeTileValue(2);
+  }
+
+ if(time > 0){
+  game.move(direction)
+  console.log("regular")
   setTimeout(() => {
-    fillSwitchShift(opposite, slide);
+    fillSwitchShift(opposite, slide, time-1);
   }, 100)
+ }
+ else{
+  game.move(slide)
+    console.log("opposite")
+    setTimeout(() => {
+    fillSwitchShift(opposite, slide, 2);
+  }, 100)
+ }
+  
 }
+
+// want to make a new function to create some shape with the tiles
+// obviously we can make rows/cols of tiles which do not merge with each other and just shove them next to each other, but 
+// this is the same as essentially just placing the tiles there in the first place, so realistically, not that impressive
+
+// need to have a function that merges tiles so that we get a resulting board that could not have resulted from just placing tiles on the board
+// Put ideas in notebook because they are easier to draw and visualize on paper rather than with ASCII characters
 
 // this function changes the tile input style based on the position of the tiles in the starting board
 // returns the string abbreviation of whatever style is going to be used
