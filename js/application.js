@@ -465,10 +465,10 @@ const getRowReverse = function (g, r){
 }
 
 
-const countRow = function(g , row){
+const countRow = function(r){
   let cnt = 0;
-  for(let i = 0; i < g.size; i++){
-    if (g.cells[i][row] !== null){
+  for(let i = 0; i < r.length ; i++){
+    if (r[i] != null){
       cnt++;
     }
   }
@@ -874,9 +874,9 @@ const getMoveMostEmpty = function(){
   return m
 }
 */
-const points = function(grid, dir){
+const points = function(game, grid, dir){
   let lg = 0; // largest in corner
-  let des = 0; // descending order
+  let des = 0// descending order
   let ld = 0; // loading tiles
   let lk = 0; // locking row
   let mt = 0; // maintain stucture
@@ -884,6 +884,8 @@ const points = function(grid, dir){
   let ourTile;
   let ourRow;
   let currMax = 0;
+  let multiplier = 1;
+  
 
   let pos1 = game.grid.getMaxPos()
   for (let g of pos1){
@@ -906,9 +908,10 @@ const points = function(grid, dir){
   for (let p of pos){
     if (isCorner(p.x, p.y)){
       if (currMax < p.value){
-        lg = 10;
+        // greater score for increasing th value in the corner
+        lg = 4;
       } else {
-        lg = 5;
+        lg = 2;
       }
       ourTile = p;
       break;
@@ -925,56 +928,63 @@ const points = function(grid, dir){
   | Score ++++
   */ 
 
-
+    /*
+    HAVE MULTIPLIER EXTEND IN CHAIN FASHION 
+    */
   let row;
-  let multiplier = 1;
+  let rr = false;
 
-  if (lg > 4){
+  if (lg != 0){
     let cornerCol = ourTile.x
   
     if(cornerCol == 0){
       row = getRow(grid, ourTile.y);
+      
     } else{
+      rr = true;
       row = getRowReverse(grid, ourTile.y)
+      
     }
+    //console.log(grid, row, ourTile.y, rr)
+
+  let obj = assessChain(grid, row, ourTile.y, 1 , rr);
+  des = obj.des
+  multiplier = obj.m
+
+  }
     //console.log(ourTile)
    
     //console.log(ourRow)
     //console.log(row);
     //console.log(grid); 
 
-    /*
-    HAVE MULTIPLIER EXTEND IN CHAIN FASHION 
-    */
-    for (let i = 1; i < row.length; i++){
-      if(row[i - 1] == null|| row[i] == null){
-        break;
-      }
-      let prev = row[i - 1].value
-      let curr = row[i].value
-      if(prev >= curr){
-        multiplier++
-      }
-    }
-    if (multiplier != 1){
-      des = 2;
-    } else{
-      des = 0;
-    }
-  }
+
+ 
+
+
+
+
  /*
   can we load any tiles
   -only adventageous given both above 
   | Score +++ given chain struc
 */
-
-  if (lg > 4 && des == 1){
+// need tro be able to load second roew ++
+  if (lg != 0 && des == 1){
     let aRow = getRow(game.grid, ourRow);
   
     let initSum = rowValue(aRow);
+    let initCount = countRow(aRow)
     let nextSum = rowValue(row);
-    if (nextSum > initSum){
-      ld = 3;
+    let nextCount = countRow(row);
+    console.log(initCount, nextCount);
+
+    // adjust merges based on value or sum of tiles.
+    if (nextSum > initSum && initCount == nextCount){
+      ld = 2;
+    }
+    if(nextSum == initSum && initCount > nextCount){
+      ld = 4;
     }
     //does a move change the value of a previoulsy defined structure
   }
@@ -1007,27 +1017,18 @@ const points = function(grid, dir){
   */
 
   // want to preface edge if not corner for most space with chain. 
-  let row1 = getRow(grid, ourTile.y);
-  //row1 get msx 
-  let i;
-  i = getRowMaxIndex(row1);
-  if (i >= row1.length / 2){
-    row1 = getRowReverse(grid, ourTile.y);
-    i = getRowMaxIndex(row1);
-  }
 
-  let multiplier1 = 1;
-    for (let j = i; j < grid.size; j++){
-      if(row1[j] == null|| row1[j - 1] == null){
-        break;
-      }
-      let prev = row1[j - 1].value
-      let curr = row1[j].value
-      if(prev >= curr){
-        multiplier1++
-      }
-    }
-  
+  let row1 = getRow(game.grid, ourRow);
+  let i;
+  let rr1 = false;
+  i = getRowMaxIndex(row1) + 1;
+  if ( i >= row1.length / 2 ){
+    row1 = getRowReverse(game.grid, ourRow);
+    i = getRowMaxIndex(row1) + 1;
+    rr1 = true;
+  }
+  let p = assessChain(game.grid, row1, ourRow, i, rr1 );
+  let multiplier1 = p.m
 
     if (multiplier1 > multiplier){
       mt = 0
@@ -1039,19 +1040,83 @@ const points = function(grid, dir){
       mt = 3
     }
  /*
+ CAN WE MERGE WITHIN OUR ROW
   can we increase Row Value
   -always want to try to get larger tiles if possible, unless to trap a smaller tile 
   score +   
 
 
 */
-console.log("Lg:", lg, "des", des , "Multip" , multiplier, "Load" ,ld, "LOCK" , lk, "Maintain", mt);
-//console.log(dir);
-
-let eq =  lg + (multiplier *des) + (ld +  lk) * mt
+console.log("Largest In Corner:" , lg , "Chain Structure", des, "\n" );
+console.log("Chain Multiplier" , multiplier, "LOCK" , lk, "LOAD" ,ld, "Mainchain", mt , '\n');
+console.log(dir);
+//mt will zero lock and load if the structure for a move is worse
+let eq =  lg + (multiplier *des) + ld + lk +  mt
     return eq;
 
 }
+
+// I want to progress until i find a tile
+//from that tile we 
+const assessChain = function(grid, r, rIndex, startIndex,  rr){
+  //console.log("METRICS CHAIN", grid, r, rIndex, startIndex,  rr)
+  let multiplier = 1;
+  let des = 0;
+  let temp = rIndex;
+  for (let i = startIndex; i < r.length; i++){
+    //console.log("MULT: " + multiplier )
+    if(r[i - 1] == null || r[i] == null){
+      console.log(r[i - 1] , r[i])
+      break;
+    }
+    let prev = r[i - 1].value
+    let curr = r[i].value
+    console.log("TILES" , prev, curr)
+    if(prev >= curr){
+      multiplier++;
+    }else{
+      break;
+    }
+
+    if (multiplier % grid.size - (startIndex - 1 ) == 0 ){
+     
+      console.log("CHECK NEXT ROW")
+
+      if (rIndex >= grid.size / 2 ){
+        temp--;
+      }else {
+        temp++
+      }
+      console.log(temp)
+      console.log(rIndex)
+
+      
+      if (rr){
+        r = getRow( grid , temp )
+      } else{
+        r = getRowReverse( grid , temp)
+      }
+      console.log("ROW: " + JSON.stringify(r))
+
+      if(r[0] != null && curr >= r[0].value){
+        console.log("NEXTROW:" , curr,  r[0].value)
+        i = 0;
+        multiplier++;
+      }
+      
+      // compare curr last and prev next 
+    }
+
+  }
+  if (multiplier != 1){
+    des = 1;
+  } else{
+    des = 0;
+  }
+
+  return {des: des, m: multiplier};
+}
+
 
 const getRowMaxIndex = function(tiles){
   let max = Number.MIN_VALUE
@@ -1082,23 +1147,26 @@ const scoreboard = function(){
   let P = []
   let best = 0
   let move;
+  let gamer = game
 
   for (let i of moves){
-    let result = game.getResultingPosition(game.grid, i);
-    let p = points(result.grid, i); //int
+    let result = gamer.getResultingPosition(gamer.grid, i);
+    let p = points(gamer, result.grid, i); //int
     P.push(p)
   }
 
   // right now the values might be the same for the score, in which we will prefer left. 
   //eventually moves will very very rarely have the same value.
   console.log("MOVES: " + moves)
-  for (let k = 0; k < P.length; k++){
-    if ( P[k] >= best){
-      best = P[k]
-      move =  moves[k]
+  for (let _ = 0; _ < P.length; _++){
+    if ( P[_] >= best){
+      best = P[_]
+      move =  moves[_]
     }
   } 
   console.log("POINTS:" + P);
+  console.log("MOVE : "+ move)
   return move;
 }
+
 
