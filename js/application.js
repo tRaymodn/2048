@@ -503,6 +503,16 @@ const countRow = function(r){
   }
     return cnt;
   }
+
+  const countRowNull = function(r){
+    let cnt = 0;
+    for(let i = 0; i < r.length ; i++){
+      if (r[i] == null){
+        cnt++;
+      }
+    }
+      return cnt;
+    }
   
   // returns 1d array of tiles that are not null
 const getCurrentOccupiedTiles = function() {
@@ -904,133 +914,177 @@ const getMoveMostEmpty = function(){
 }
 */
 const points = function(game, grid, dir){
+
   let lg = 0; // largest in corner
-  let des = 0// descending order
   let ld = 0; // loading tiles
   let lk = 0; // locking row
   let mt = 0; // maintain stucture
-  let mrg = 0; // merges 
-  let ourTile;
-  let ourRow;
-  let currMax = 0;
-  let multiplier = 1;
-  
+  let nextRowI;
+  let currRowI;
+  let nextMultiplier = 1;
+  let currMultiplier = 1; 
+  let nextChain;
+  let currChain;
+  let nextScr = 0;
+  let currScr = 0;
+  let currVal = 0;
+  let nextVal = 0;
+  let adjLoad = 0;
 
-  let pos1 = game.grid.getMaxPos()
-  for (let g of pos1){
-    if (isCorner(g)){
-      currMax = g.value;
-      ourRow = g.position.y 
-      break;
-    }
-  }
-  if (!ourRow){
-    ourRow = pos1[0].y;
-  }
-  
 
-  /*largest in corner
-    -get largest tile, is it in the corner
-  |Score +++++
+
+  /*
+  -LARGEST IN CORNER 
   */
-  let pos = grid.getMaxPos()
-  for (let p of pos){
-    if (isCorner(p.x, p.y)){
-      if (currMax < p.value){
-        // greater score for increasing th value in the corner
-        lg = 4;
-      } else {
-        lg = 2;
-      }
-      ourTile = p;
+
+  // Get position of the max tile in the current grid if any are in the corner, save the row, otherwise our row is the first entry in the largest tiles array 
+  let currPos = game.grid.getMaxPos()
+  for (let g of currPos){
+    if (isCorner(g.x, g.y)){
+      currVal = g.value
+      currRowI = g.y 
       break;
-      
     }
-    lg = 0;
   }
-  if(!ourTile){
-    ourTile = pos[0]
+  if (!currRowI){
+    currRowI = currPos[0].y;
   }
-   /*
-  Descecnding order from corner
-    -only if largest in corner, start corner and check value of next with points for higher chains
-  | Score ++++
+  
+
+  // get position of the largest tile in the next grid, if so save the value and the row , otherwise the value is zero and we use the first entry in the largest tiles array
+  let nextPos = grid.getMaxPos()
+  for (let p of nextPos){
+    if (isCorner(p.x, p.y)){
+      nextVal = p.value
+      nextRowI = p.y;
+      break;
+    }
+  }
+  if(!nextRowI){
+    nextRowI = nextPos[0].y
+  }
+
+  
+
+  /*
+  CHAINING
   */ 
 
-    /*
-    HAVE MULTIPLIER EXTEND IN CHAIN FASHION 
-    */
-  let row;
-  let rr = false;
+  // determine which index to start chaining from, then get the row in either normal order or reverse order for current grid
+  let nextRow = getRow(grid, nextRowI);
+  let j;
+  let nextRR = false;
+  let currRow = getRow(game.grid, currRowI);
+  let i;
+  let currRR = false;
 
-  if (lg != 0){
-    let cornerCol = ourTile.x
-  
-    if(cornerCol == 0){
-      row = getRow(grid, ourTile.y);
-      
-    } else{
-      rr = true;
-      row = getRowReverse(grid, ourTile.y)
-      
-    }
-    //console.log(grid, row, ourTile.y, rr)
-
-  let obj = assessChain(grid, row, ourTile.y, 1 , rr);
-  des = obj.des
-  multiplier = obj.m
-
+  j = getRowMaxIndex(nextRow) + 1;
+  if ( j >= nextRow.length / 2 ){
+    nextRow = getRowReverse(grid, nextRowI);
+    j = getRowMaxIndex(nextRow) + 1;
+    nextRR = true;
   }
-    //console.log(ourTile)
-   
-    //console.log(ourRow)
-    //console.log(row);
-    //console.log(grid); 
 
+  i = getRowMaxIndex(currRow) + 1;
+  if ( i >= currRow.length / 2 ){
+    currRow = getRowReverse(game.grid, currRowI);
+    i = getRowMaxIndex(currRow) + 1;
+    currRR = true;
+  }
 
+   // obtain chain metrics for comparison later 
+   let obj = assessChain(grid, nextRow, nextRowI, j , nextRR);
+
+   nextMultiplier = obj.m // length
+   nextChain = obj.arr // tiles
+   nextScr = obj.scr // sum - length
  
+ // obtain chain metrics for comparison later 
+   let p = assessChain(game.grid, currRow, currRowI, i, currRR );
+ 
+   currMultiplier = p.m; // length
+   currChain = p.arr; // tiles
+   currScr = p.scr; // sum - length
 
+  // want to preface edge if not corner for most space with chain < --------------------------------------
 
+  // CHAIN DOESNT HAVE TO BE IDEAL CHAIN ALL THE TIME < ----------------------------------- 
 
 
  /*
-  can we load any tiles
-  -only adventageous given both above 
-  | Score +++ given chain struc
+  LOADING TILES
 */
-// need tro be able to load second roew ++
-  if (lg != 0 && des == 1){
-    let aRow = getRow(game.grid, ourRow);
+
+  // given that we have a chain present before and after a move we always want to consider both the average difference in the sum
+  // and the differential between the counts of the chains as a negative value for either will be representative of the change of the board state
+
+
+    let initSum = rowValue(currChain);
+    let initCount = countRow(currChain)
+
+    let reversedCurr = currChain.slice();
+    let reversedNext = nextChain.slice();
+
+    let currPositions = [];
+    let nextPositions = [];
+
+    for (let tile of reversedCurr){
+      let pos = {x: tile.x , y: tile.y}
+      currPositions.push(pos);
+    }
+
+    for (let tile of reversedNext){
+      let pos = {x: tile.x , y: tile.y}
+      nextPositions.push(pos);
+    }
+
+    //console.log("curr positions" , currPositions)
+    //console.log("next positions" , nextPositions)
+
+    let adjCurr = loadAdj(game.grid, currPositions)
+    let adjNext = loadAdj(grid, nextPositions)
+
+    //console.log("adj curr" , adjCurr);
+    //console.log("adj next" ,  adjNext);
+
+    if(adjCurr.length > 0 && adjNext.length > 0){
+      sumFacCurr = rowValue(adjCurr) / adjCurr.length;
+      sumFacNext = rowValue(adjNext) / adjNext.length;
+      adjLoad = sumFacNext - sumFacCurr;
+    }
+    
+
+    let nextSum = rowValue(nextChain);
+    let nextCount = countRow(nextChain);
+    
+    //console.log( "Current Chain", currChain);
+    //console.log("Next Chain", nextChain);
+
+
+    let fac = (nextSum - initSum) / (initCount +  nextCount); 
+    let countDif =  nextCount - initCount ; 
+
+    //console.log("FAC" , fac , "Dif" , countDif)
+
+    // < --------------- need to prefer proper ordered chains over chains. (i.e [128, 64, 32, 16] VS. [128, 32, 8, 2]   )
+
+    // < ---------------- can we load adjacent tiles to chain in ascending order from chain 
+
+
+
+
   
-    let initSum = rowValue(aRow);
-    let initCount = countRow(aRow)
-    let nextSum = rowValue(row);
-    let nextCount = countRow(row);
-    console.log(initCount, nextCount);
 
-    // adjust merges based on value or sum of tiles.
-    if (nextSum > initSum && initCount == nextCount){
-      ld = 2;
-    }
-    if(nextSum == initSum && initCount > nextCount){
-      ld = 4;
-    }
-    //does a move change the value of a previoulsy defined structure
-  }
-
- /*
-  can we Lock Row
-    -good fallback regardless of above
-  | If all previous true Score +++, if any above not true Score +++++
+  /*
+  LOCKING ROW 
   */
-  let lockedCurr = isLockedRow(game.grid, ourRow);
-  let lockedNext = isLockedRow(grid, ourTile.y);
 
-//can prob check if previous coinditions are true here 
+  let lockedCurr = isLockedRow(game.grid, currRowI);
+  let lockedNext = isLockedRow(grid, nextRowI);
 
-  if(lockedCurr && !lockedNext){
+
+  if(lockedCurr && !lockedNext || !lockedCurr && !lockedNext){
     lk = -1;
-    //detrimentScore
   }
   if (lockedCurr && lockedNext){
     lk = 1;
@@ -1039,55 +1093,38 @@ const points = function(game, grid, dir){
     lk = 2;
   }
 
-   /*
-  Can we maintain the struture
-  -Always want to if can, if doesnt large score detriment
-  |score +++++ if not score-------
-  */
+  //SCORES 
+  mt =  nextMultiplier - currMultiplier;
+  lg =  nextVal - currVal;
+  ld = fac + countDif
+  
 
-  // want to preface edge if not corner for most space with chain. 
-
-  let row1 = getRow(game.grid, ourRow);
-  let i;
-  let rr1 = false;
-  i = getRowMaxIndex(row1) + 1;
-  if ( i >= row1.length / 2 ){
-    row1 = getRowReverse(game.grid, ourRow);
-    i = getRowMaxIndex(row1) + 1;
-    rr1 = true;
+  //console.log("Largest In Corner:" , lg , "Chain Structure", des, "\n" );
+  //console.log("Chain Multiplier" , multiplier, "LOCK" , lk, "LOAD" ,ld, "Mainchain", mt , '\n');
+  console.log("direction" , dir);
+  //console.log("Scores", nextScr , currScr)
+  console.log("Lg: ", lg , "Chain:" , nextScr - currScr ,"load", ld , "lock" ,lk , "mainchain:" ,  mt, "adjLoad" , adjLoad)
+  let eq =  lg + (nextScr - currScr) + ld +  mt  + adjLoad // + lk (maybe unimportant)
+      return eq;
   }
-  let p = assessChain(game.grid, row1, ourRow, i, rr1 );
-  let multiplier1 = p.m
 
-    if (multiplier1 > multiplier){
-      mt = 0
+const getLikes = function (prev, curr){
+  let cnt = 0
+  for(let i = 0; i < prev.length; i++ ){
+    if (prev[i] == null || curr[i] == null){
+      continue;
     }
-    if (multiplier1 == multiplier){
-      mt = 1
+    else{
+      if (prev[i].value != curr[i].value)
+      cnt++
     }
-    if (multiplier > multiplier1){
-      mt = 3
-    }
- /*
- CAN WE MERGE WITHIN OUR ROW
-  can we increase Row Value
-  -always want to try to get larger tiles if possible, unless to trap a smaller tile 
-  score +   
 
-
-*/
-console.log("Largest In Corner:" , lg , "Chain Structure", des, "\n" );
-console.log("Chain Multiplier" , multiplier, "LOCK" , lk, "LOAD" ,ld, "Mainchain", mt , '\n');
-console.log(dir);
-//mt will zero lock and load if the structure for a move is worse
-let eq =  lg + (multiplier *des) + ld + lk +  mt
-    return eq;
-
+  }
+  return cnt;
 }
 
-// I want to progress until i find a tile
-//from that tile we 
 const assessChain = function(grid, r, rIndex, startIndex,  rr){
+  let arr = [r[startIndex - 1]];
   //console.log("METRICS CHAIN", grid, r, rIndex, startIndex,  rr)
   let multiplier = 1;
   let des = 0;
@@ -1095,29 +1132,36 @@ const assessChain = function(grid, r, rIndex, startIndex,  rr){
   for (let i = startIndex; i < r.length; i++){
     //console.log("MULT: " + multiplier )
     if(r[i - 1] == null || r[i] == null){
-      console.log(r[i - 1] , r[i])
+      //console.log(r[i - 1] , r[i])
       break;
     }
-    let prev = r[i - 1].value
-    let curr = r[i].value
-    console.log("TILES" , prev, curr)
-    if(prev >= curr){
+    let prev = r[i - 1]
+    let curr = r[i]
+    //console.log("TILES" , prev, curr)
+    /*
+    if (curr.value == prev.value || curr.value == prev.value / 2){
+      arr.push(curr);
       multiplier++;
-    }else{
+    }
+    else */ if (curr.value <= prev.value ){
+      arr.push(curr);
+      multiplier++;
+    }
+
+    else{
       break;
     }
 
     if (multiplier % grid.size - (startIndex - 1 ) == 0 ){
-     
-      console.log("CHECK NEXT ROW")
-
+      
+      //console.log("CHECK NEXT ROW")
       if (rIndex >= grid.size / 2 ){
         temp--;
       }else {
         temp++
       }
-      console.log(temp)
-      console.log(rIndex)
+      //console.log(temp)
+      //console.log(rIndex)
 
       
       if (rr){
@@ -1125,12 +1169,13 @@ const assessChain = function(grid, r, rIndex, startIndex,  rr){
       } else{
         r = getRowReverse( grid , temp)
       }
-      console.log("ROW: " + JSON.stringify(r))
+      //console.log("ROW: " + JSON.stringify(r))
 
-      if(r[0] != null && curr >= r[0].value){
-        console.log("NEXTROW:" , curr,  r[0].value)
+      if(r[0] != null && curr.value >= r[0].value){
+        //console.log("NEXTROW:" , curr,  r[0].value)
         i = 0;
         multiplier++;
+        arr.push(r[0])
       }
       
       // compare curr last and prev next 
@@ -1143,7 +1188,12 @@ const assessChain = function(grid, r, rIndex, startIndex,  rr){
     des = 0;
   }
 
-  return {des: des, m: multiplier};
+  let Sum = rowValue(arr);
+  let Count = countRow(arr);
+
+  let scr = Sum - Count
+
+  return {des: des, m: multiplier , arr: arr, scr: scr};
 }
 
 
@@ -1174,7 +1224,7 @@ const getValidMoves = function(){
 const scoreboard = function(){
   let moves = getValidMoves()
   let P = []
-  let best = 0
+  let best = Number.NEGATIVE_INFINITY
   let move;
   let gamer = game
 
@@ -1194,8 +1244,64 @@ const scoreboard = function(){
     }
   } 
   console.log("POINTS:" + P);
-  console.log("MOVE : "+ move)
+  console.log("MOVE : "+ move);
+  console.log("\n")
   return move;
 }
 
+const loadAdj = function(grid, positions) {
+  let posNotInChainOrNull = [];
+  let values = [];
+
+
+  for (let pos of positions){
+
+    let urdl = []
+
+    up =    { x: pos.x, y: pos.y - 1 }
+    right = { x: pos.x + 1, y: pos.y }
+    down =  { x: pos.x, y: pos.y + 1 }
+    left =  { x: pos.x - 1, y: pos.y }
+
+    //let posss = [up , right, down, left];
+    //console.log("POSS" , posss);
+    
+
+    if(up.x < grid.size && up.y < grid.size && up.x >= 0 && up.y >=  0 ){
+      urdl.push(up)
+    }
+    if(right.x < grid.size && right.y < grid.size && right.x >= 0 && right.y >= 0 ){
+      urdl.push(right)
+    }
+    if(down.x < grid.size && down.y < grid.size && down.x >= 0 && down.y >= 0 ){
+      urdl.push(down)
+    }
+    if(left.x < grid.size && left.y < grid.size && left.x >= 0 && left.y >= 0 ){
+      urdl.push(left)
+    }
+    
+    //console.log("POS and urdl", pos, urdl);
+
+    for (let dir of urdl){
+      for (let i = 0; i < positions.length; i++){
+        if (dir.x == positions[i].x  && dir.y == positions[i].y) {
+          break;
+        } else if (i == positions.length - 1){
+            posNotInChainOrNull.push(dir);
+          } else continue;
+        } 
+    }
+  }
+
+  //console.log("pos not in chain " , posNotInChainOrNull)
+
+  for (let valid of posNotInChainOrNull){
+    if (grid.cells[valid.x][valid.y] != null){
+      values.push(grid.cells[valid.x][valid.y]);
+
+    }
+      
+  }
+  return values;
+}
 
