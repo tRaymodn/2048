@@ -186,6 +186,7 @@ GameManager.prototype.setup = function () {
     this.keepPlaying = previousState.keepPlaying;
     this.states = [];
     this.moves = [];
+    this.tileRows = new TileRows();
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
@@ -196,6 +197,7 @@ GameManager.prototype.setup = function () {
     this.moves = [];
     this.tileInsert = "random"
     this.tileValue = 0;
+    this.tileRows = new TileRows();
 
     // Add the initial tiles
     this.addStartTiles();
@@ -206,6 +208,10 @@ GameManager.prototype.setup = function () {
 
   // Update the actuator
   this.actuate();
+
+  // Fill in configurations and configDecomps in tileRows
+  this.tileRows.evaluateState(Array(this.size).fill(0), []);
+  console.log(this.tileRows.configurations);
 };
 
 // Set up the initial tiles to start the game with
