@@ -1,11 +1,12 @@
-function GameManager(size, InputManager, Actuator, StorageManager) {
+function GameManager(size, InputManager, Actuator, StorageManager, designer) {
   this.size           = size; // Size of the grid
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
   this.actuator       = new Actuator;
   this.gridCreated    = false;
+  this.designer       = designer;
 
-  this.startTiles     = 2;
+  this.startTiles     = designer === true ? 0 : 2;
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
@@ -161,6 +162,46 @@ minus.addEventListener('click', () => {
 
 }
 
+GameManager.prototype.makeImage = function(colorMap, time){
+  let moveSets = this.tileRows.tileAssignments(colorMap);
+  this.makeImageMove(moveSets[0], time);
+}
+
+GameManager.prototype.makeImageMove = function(moves, time){
+   // this setTimout waits time, and then seems to do all of the moves at once.
+    this.designerMove(moves[0].move, moves[0].value, moves[0].position);
+    console.log(moves)
+  if(moves.length > 1){
+      let newMoves = [...moves];
+      newMoves.shift();
+      setTimeout(() => { // this made everything fall into place boiiii
+        this.makeImageMove(newMoves, time);
+      }, time);
+      
+    }
+}
+
+// if grid is empty, insert a value at the given position, else, just set the insert and value to be correct and make the move
+GameManager.prototype.designerMove = function(move, value, placement){
+  let flag = false;
+  for(const row of this.grid.cells){
+    for(const val of row){
+      if(val !== null){
+        flag = true;
+      }
+    }
+  }
+  if(!flag){
+    console.log("Inserting first tile")
+    this.placeTileSpecific(value, placement)
+  }
+  else{
+    this.tileInsert = placement;
+    this.tileValue = value;
+    this.move(move);
+  }
+}
+
 // Keep playing after winning (allows going over 2048)
 GameManager.prototype.keepPlaying = function () {
   this.keepPlaying = true;
@@ -200,7 +241,9 @@ GameManager.prototype.setup = function () {
     this.tileRows = new TileRows();
 
     // Add the initial tiles
-    this.addStartTiles();
+    if(!this.designer){
+     this.addStartTiles(); 
+    }
   }
 
   //Set the position classes
@@ -211,7 +254,6 @@ GameManager.prototype.setup = function () {
 
   // Fill in configurations and configDecomps in tileRows
   this.tileRows.evaluateState(Array(this.size).fill(0), []);
-  console.log(this.tileRows.configurations);
 };
 
 // Set up the initial tiles to start the game with
@@ -349,7 +391,8 @@ GameManager.prototype.prepareTiles = function () {
   this.grid.eachCell(function (x, y, tile) {
     if (tile) {
       tile.mergedFrom = null;
-      tile.savePosition();
+      //tile.savePosition(); CHANGES
+      tile.previousPosition = {x: x, y: y};
     }
   });
 };
@@ -358,13 +401,17 @@ GameManager.prototype.prepareTiles = function () {
 GameManager.prototype.moveTile = function (tile, cell) {
   this.grid.cells[tile.x][tile.y] = null;
   this.grid.cells[cell.x][cell.y] = tile;
-  tile.updatePosition(cell);
+  //tile.updatePosition(cell);
+  tile.x = cell.x;
+  tile.y = cell.y;
 };
 
 GameManager.prototype.moveTileGrid = function(tile, cell, grid){
   grid.cells[tile.x][tile.y] = null;
   grid.cells[cell.x][cell.y] = tile;
-  tile.updatePosition(cell);
+  tile.x = cell.x;
+  tile.y = cell.y;
+  //tile.updatePosition(cell);
 }
 
 // Move tiles on the grid in the specified direction
@@ -465,6 +512,48 @@ GameManager.prototype.move = function (direction) {
     this.actuate();
   }
 };
+
+GameManager.prototype.placeTileSpecific = function(tileValue, tileInsert){
+  switch(tileInsert){
+    case 'random': 
+      this.addRandomTileValue(tileValue);
+      break;
+    case 'tL':
+      this.topLeftInsertTile(tileValue);
+      this.actuator.addTile({x: 0, y: 0, value: tileValue}, this.size);
+      break;
+    case 'bL': 
+      this.bottomLeftInsertTile(tileValue);
+      this.actuator.addTile({x: this.size-1, y: 0, value: tileValue}, this.size);
+      break;
+    case 'tR':
+      this.topRightInsertTile(tileValue);
+      this.actuator.addTile({x: 0, y: this.size-1, value: tileValue}, this.size);
+      break;
+    case 'bR':
+      this.bottomRightInsertTile(tileValue);
+      this.actuator.addTile({x: this.size-1, y: this.size-1, value: tileValue}, this.size);
+      break;
+    case 'tLR':
+      this.topLeftInsertTileRow(tileValue);
+      this.actuator.addTile({x: 0, y: 0, value: tileValue}, this.size);
+      break;
+    case 'bLR':
+      this.bottomLeftInsertTileRow(tileValue);
+      this.actuator.addTile({x: this.size-1, y: 0, value: tileValue}, this.size);
+      break;
+    case 'tRR':
+      this.topRightInsertTileRow(tileValue);
+      this.actuator.addTile({x: 0, y: this.size-1, value: tileValue}, this.size);
+      break;
+    case 'bRR':
+      this.bottomRightInsertTileRow(tileValue);
+      this.actuator.addTile({x: this.size-1, y: this.size-1, value: tileValue}, this.size);
+      break;
+    default:
+      this.addRandomTile(tileValue);
+  }
+}
 
 GameManager.prototype.changeTileInsert = function(insertStyle){
   this.tileInsert = insertStyle;

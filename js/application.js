@@ -1,13 +1,35 @@
 // Wait till the browser is ready to render the game (avoids glitches)
 let game;
 window.requestAnimationFrame(function () {
-  game = new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager);
+  game = new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager, false);
 });
 
 let interval;
 let dir = 0;
 let autoMoving = false;
 let sp = 500;
+
+document.getElementById('makeImageButton').addEventListener("click", () => {
+  if(game.designer){
+    let colorMap = [[2, 1, 0, 1],
+                    [1, 2, 1, 0],
+                    [3, 3, 2, 1],
+                    [1, 2, 3, 2]];
+    game.makeImage(colorMap, 200);
+  }
+  
+})
+
+document.getElementById('designerButton').addEventListener("click", () => {
+  //game.removeGridRows('grid-row', game.size);
+  //game = new GameManager(game.size, KeyboardInputManager, HTMLActuator, LocalStorageManager, true);
+  game.grid.cells = game.grid.empty();
+  game.actuator.clearContainer(game.actuator.tileContainer);
+  //game.grid.insertTile({x: 0, y: 0, value: 2});
+  //game.actuator.addTile({x: 0, y: 0, value: 2}, game.size);
+  game.designer = !game.designer;
+})
+
 
 document.getElementById('speedP').addEventListener("click", () => {
 sp = sp - 50;
