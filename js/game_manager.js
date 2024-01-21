@@ -186,7 +186,7 @@ GameManager.prototype.setup = function () {
     this.keepPlaying = previousState.keepPlaying;
     this.states = [];
     this.moves = [];
-    this.tileRows = new TileRows();
+    //this.tileRows = new TileRows();
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
@@ -197,7 +197,7 @@ GameManager.prototype.setup = function () {
     this.moves = [];
     this.tileInsert = "random"
     this.tileValue = 0;
-    this.tileRows = new TileRows();
+    //this.tileRows = new TileRows();
 
     // Add the initial tiles
     this.addStartTiles();
@@ -210,8 +210,8 @@ GameManager.prototype.setup = function () {
   this.actuate();
 
   // Fill in configurations and configDecomps in tileRows
-  this.tileRows.evaluateState(Array(this.size).fill(0), []);
-  console.log(this.tileRows.configurations);
+  //this.tileRows.evaluateState(Array(this.size).fill(0), []);
+  //console.log(this.tileRows.configurations);
 };
 
 // Set up the initial tiles to start the game with
@@ -838,14 +838,12 @@ GameManager.prototype.printGrid = function(grid){
 //function that returns an array of tiles that are present on the board ofter merges
 GameManager.prototype.getOccupiedCells = function(){
   let occupiedCells = [];
-  let count = 0;
   for(let i = 0; i < this.size; i++){
     for(let j = 0; j < this.size; j++){
       let aCell = {x: i, y: j};
       if (this.grid.cellOccupied(aCell)){
         let aTile = this.grid.cellContent(aCell);
-        occupiedCells[count] = aTile;
-        count++;
+        occupiedCells.push(aTile);
       }
     }
   }
