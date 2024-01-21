@@ -1,13 +1,56 @@
 // Wait till the browser is ready to render the game (avoids glitches)
 let game;
 window.requestAnimationFrame(function () {
-  game = new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager);
+  game = new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager, false);
 });
 
 let interval;
 let dir = 0;
 let autoMoving = false;
 let sp = 500;
+
+document.getElementById('makeImageButton').addEventListener("click", () => {
+  if(game.designer){
+    let colorMap = makeColorBoardFromPicker();
+    game.makeImage(colorMap.map, colorMap.mapping, 200);
+  }
+  
+})
+
+document.getElementById('plus').addEventListener("click", () => {
+  if(game.designer){
+    game.actuator.clearContainer(document.getElementById("colorPicker"));
+    makeImagePickerBoard(Number(game.size) + 1);
+  }
+})
+
+document.getElementById('minus').addEventListener("click", () => {
+  if(game.designer){
+    game.actuator.clearContainer(document.getElementById("colorPicker"));
+    makeImagePickerBoard(Math.max(Number(game.size) - 1, 2));
+  }
+})
+
+document.getElementById('designerButton').addEventListener("click", () => {
+  //game.removeGridRows('grid-row', game.size);
+  //game = new GameManager(game.size, KeyboardInputManager, HTMLActuator, LocalStorageManager, true);
+  if(!game.designer){
+    game.grid.cells = game.grid.empty();
+    game.actuator.clearContainer(game.actuator.tileContainer);
+    game.designer = !game.designer;
+    makeImagePickerBoard(game.size);
+  }
+  else{
+    game.actuator.clearContainer(document.getElementById("colorPicker"));
+    game.designer = !game.designer;
+    game.setup();
+  }
+  //game.grid.insertTile({x: 0, y: 0, value: 2});
+  //game.actuator.addTile({x: 0, y: 0, value: 2}, game.size);
+})
+
+
+
 
 document.getElementById('speedP').addEventListener("click", () => {
 sp = sp - 50;
@@ -71,6 +114,92 @@ document.getElementById("submitValue").addEventListener("click", () => {
   game.changeTileValue(val);
   document.getElementById('inputValue').value = "";
 })
+
+const makeImagePickerBoard = function(size){
+  for(let i = 0; i < size; i++){
+    let row = document.createElement("div");
+    row.setAttribute("class", "colorTileRow")
+    for(let j = 0; j < size; j++){
+      let tile = document.createElement("div")
+      tile.setAttribute("class", "colorTile");
+      tile.addEventListener("click", (e) => {
+        changePickerTileColor(e.target);
+      })
+      row.appendChild(tile);
+    }
+    document.getElementById("colorPicker").appendChild(row);
+  }
+}
+
+const changePickerTileColor = function(htmlTile){
+  console.log(getComputedStyle(htmlTile).backgroundColor)
+  //switch(htmlTile.style.backgroundColor)
+  //htmlTile.setAttribute("style", "background-color: red");
+  let style = getComputedStyle(htmlTile).backgroundColor;
+  console.log(style)
+  let newColor;
+  switch(style){
+    case 'rgb(0, 0, 0)':
+      newColor = "rgb(255, 0, 0)";
+      break;
+    case "rgb(255, 0, 0)":
+      newColor = "rgb(255, 165, 0)";
+      break;
+    case "rgb(255, 165, 0)":
+      newColor = "rgb(255, 255, 0)";
+      break;
+    case "rgb(255, 255, 0)":
+      newColor = "rgb(0, 255, 0)";
+      break;
+    case "rgb(0, 255, 0)":
+      newColor = "rgb(0, 0, 255)";
+      break;
+    case "rgb(0, 0, 255)":
+      newColor = "rgb(75, 0, 130)";
+      break;
+    case "rgb(75, 0, 130)":
+      newColor = "rgb(148, 0, 211)";
+      break;
+    case "rgb(148, 0, 211)":
+      newColor = "rgb(255, 255, 255)";
+      break;
+    case "rgb(255, 255, 255)":
+      newColor = "rgb(0, 0, 0)";
+      break;
+    default:
+      newColor = "rgb(0, 0, 0)";
+      break;
+  }
+  htmlTile.setAttribute("style", `background-color: ${newColor}`);
+  makeColorBoardFromPicker()
+}
+
+const makeColorBoardFromPicker = function(){
+  let colorBoard = []
+  let mapping = {};
+  let number = 0;
+  let columns = document.getElementsByClassName("colorTileRow")
+  for(let i = 0; i < columns.length; i++){
+    let thisColumn = columns[i];
+    let col = [];
+    for(let j = 0; j < thisColumn.children.length; j++){
+      let color = getComputedStyle(thisColumn.children[j]).backgroundColor;
+      if(!mapping[color] && mapping[color] !== 0){
+        mapping[color] = number;
+        col.push(mapping[color]);
+        number = number + 1;
+      }
+      else{
+        col.push(mapping[color])
+      }
+    }
+    colorBoard.push(col);
+  }
+  console.log(colorBoard);
+  let output = colorBoard[0].map((_, colIndex) => colorBoard.map(row => row[colIndex])); // https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript
+  console.log(output)
+  return {map: output, mapping: mapping};
+}
 
 // Based on the tiles on the board and the move taken, runs runRepeating() with the correct direction and slide
 const makeBestMove = function(tiles, m){

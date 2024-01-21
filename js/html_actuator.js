@@ -66,6 +66,13 @@ HTMLActuator.prototype.setPositionClasses = function(grid){
   }
 }
 
+HTMLActuator.prototype.changeTileClassColor = function(tileClass, color){
+  this.styleElement.textContent += `.tile.tile-${tileClass} .tile-inner {
+    color: ${color};
+    background-color: ${color};
+  }`
+}
+
 // Continues the game (both restart and keep playing)
 HTMLActuator.prototype.continueGame = function () {
   this.clearMessage();

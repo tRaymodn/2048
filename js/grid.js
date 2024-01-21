@@ -98,7 +98,7 @@ Grid.prototype.withinBounds = function (position) {
   return position.x >= 0 && position.x < this.size &&
          position.y >= 0 && position.y < this.size;
 };
-
+// CHANGES!!! was row.push(this.cells[x][y] ? this.cells[x][y].serialize() : null);
 Grid.prototype.serialize = function () {
   var cellState = [];
 
@@ -106,7 +106,7 @@ Grid.prototype.serialize = function () {
     var row = cellState[x] = [];
 
     for (var y = 0; y < this.size; y++) {
-      row.push(this.cells[x][y] ? this.cells[x][y].serialize() : null);
+      row.push(this.cells[x][y] ? {position: {x: this.cells[x][y].x, y: this.cells[x][y].y}, value: this.cells[x][y].value} : null);
     }
   }
 
