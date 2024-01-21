@@ -162,15 +162,42 @@ minus.addEventListener('click', () => {
 
 }
 
-GameManager.prototype.makeImage = function(colorMap, time){
+GameManager.prototype.makeImage = function(colorMap, mapping, time){
   let moveSets = this.tileRows.tileAssignments(colorMap);
-  this.makeImageMove(moveSets[0], time);
+  if(moveSets.length > 0){
+    let index = 0;
+    for(const prop in mapping){ // set tile class colors correctly
+      let mappingNumbers = moveSets[0].mapping[index.toString()];
+      console.log(typeof(mappingNumbers))
+      if(typeof(mappingNumbers) === "object"){
+        mappingNumbers.forEach((number) => {
+          this.actuator.changeTileClassColor(number, prop);
+        })
+      }
+      else{
+        this.actuator.changeTileClassColor(mappingNumbers, prop);
+      }
+      index = index + 1;
+    }
+    this.makeImageMove(moveSets[0].moves, time);
+  }
+  else{
+    let colorMapTranspose = colorMap[0].map((_, colIndex) => colorMap.map(row => row[colIndex]));
+    console.log("attempting with columns")
+    let colMoveSet = this.tileRows.tileAssignments(colorMapTranspose);
+    if(colMoveSet.length > 0){
+      this.makeImageMove(colMoveSet[0].moves, time);
+    }
+    else{
+      console.log("cannot be made at this time")
+    }
+  }
 }
 
 GameManager.prototype.makeImageMove = function(moves, time){
    // this setTimout waits time, and then seems to do all of the moves at once.
     this.designerMove(moves[0].move, moves[0].value, moves[0].position);
-    console.log(moves)
+    console.log(this.grid)
   if(moves.length > 1){
       let newMoves = [...moves];
       newMoves.shift();
@@ -252,8 +279,9 @@ GameManager.prototype.setup = function () {
   // Update the actuator
   this.actuate();
 
+  let zeros = Array(Number(this.size)).fill(0);
   // Fill in configurations and configDecomps in tileRows
-  this.tileRows.evaluateState(Array(this.size).fill(0), []);
+  this.tileRows.evaluateState(zeros, []);
 };
 
 // Set up the initial tiles to start the game with

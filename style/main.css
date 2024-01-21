@@ -598,3 +598,28 @@ hr {
     margin-top: 90px !important; }
   .game-message .lower {
     margin-top: 30px !important; } }
+
+#colorPickerArea{
+  margin-top: 50px;
+  float: right;
+  background-color: grey;
+  display: inline;
+}
+
+#colorPicker{
+  display: flex;
+  flex-direction: row;
+}
+
+.colorTile{
+  margin-right: 3px;
+  margin-top: 3px;
+  width: 30px;
+  height: 30px;
+  background-color: black;
+}
+
+.colorTileRow{
+  display: flex;
+  flex-direction: column;
+}

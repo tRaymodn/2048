@@ -4,29 +4,6 @@ class TileRows {
         this.configDecomps = [];
         this.nonReversibleConfigs = [];
     }
-    main() {
-        let startingArr = [0, 0, 0, 0];
-        this.evaluateState(startingArr, []);
-        // configs and configDecomps now filled
-        let filledList = this.getFilledConfigs();
-
-        let mergeVal = [2, 4, 32, 4];
-        let merge = this.findMerge(mergeVal, [1, 0, 3]);
-        if (merge != -1) {
-            console.log("Merge for " + mergeVal + " at position " + merge + " is " + this.configurations[merge]);
-        }
-        else {
-            console.log("Merge for " + mergeVal + " At given positions does not exist");
-        }
-
-        let sampleRow = [64, 16, 4, 128];
-        this.makeRow(sampleRow);
-        let colorMap = [[2, 1, 0, 1],
-        [1, 2, 1, 0],
-        [3, 0, 2, 1],
-        [1, 2, 3, 2]];
-        let assignm = this.tileAssignments(colorMap);
-    }
     // ChatGPT
     arraysAreEqual(array1, array2) {
         if (array1.length !== array2.length) {
@@ -363,6 +340,7 @@ class TileRows {
             //console.log("All Valid: ");
             let bestLen = row.length; // want it to be small, its really the number of zeros in the given row
             let bestOnes = [];
+            let oneList = [];
             for (const r of allValid) {
                 //console.log(r);
                 let zeros = 0;
@@ -382,6 +360,9 @@ class TileRows {
                     bestLen = zeros;
                     bestOnes = [r];
                 }
+                if(zeros === row.length - 1){
+                    oneList.push(r);
+                }
             }
             //console.log(bestOnes);
             list = bestOnes;
@@ -390,6 +371,22 @@ class TileRows {
                     //console.log("Totally Filled, Yippeee!");
                     break;
                 case 1:
+                    bestOnes.forEach((row) => { // 3-1s have a config and a times, but they also have a decomp property
+                        for(let i = 0; i < oneList.length; i++){
+                            if(row.config[0] === 0 && oneList[i].config[0] !== 0){
+                                let t = row.times >= oneList[i].times ? row.times : oneList[i].times;
+                                let newRow = {config: row.config, times: t, decomp: [row, oneList[i]]}
+                                newRow.config[0] = oneList[i].config[0];
+                                list.push(newRow)
+                            }
+                            else if(row.config[row.config.length -1] === 0 && oneList[i].config[row.config.length - 1] !== 0){
+                                let t = row.times >= oneList[i].times ? row.times : oneList[i].times;
+                                let newRow = {config: row.config, times: t, decomp: [row, oneList[i]]}
+                                newRow.config[newRow.config.length -1] = oneList[i].config[oneList[i].config.length-1];
+                                list.push(newRow);
+                            }
+                        }
+                    })
                     //console.log("Good, most likely");
                     break;
                 default:
@@ -561,7 +558,10 @@ class TileRows {
                         if (!this.adjacentVals(possib)) {
                             //TODO here somewhere I need to check if this permutation can be made considering the rows above and below it - sliding
                             let res = this.makeRow(possib);
-                            if (res.len === 0) { // only pushing if makeRow() returns a full row
+                            if(res.len === 1){
+                                //console.log(res)
+                            }
+                            if (res.len === 0 || res.len === 1) { // only pushing if makeRow() returns a full row
                                 bestPossibilities.push({ list: res.list, row: colors[times] });
                             }
                         }
@@ -611,30 +611,56 @@ class TileRows {
                 }
             }
         }
+        return [];
     }
     // make a function to go through makeablePerms - the rows that can be made, and find a combination of rows that do not have any similarities vertically
     noVertSimilar(hugeList, arraySize, mappings) {
+        console.log(hugeList)
         let totalPossibilities = [];
         for (let i = 0; i < hugeList.length; i++) {
             let allPossibilities = [];
             for (let j = 0; j < hugeList[i].length; j++) {
                 for (let k = 0; k < hugeList[i][j].length; k++) {
                     for (let p = 0; p < hugeList[i][j][k].list.length; p++) {
-                        if (j === 0) {
-                            allPossibilities.push([hugeList[i][j][k].list[p]]);
+                        if (j === 0) { // if this is representing the first row in the newColorMapping
+                            allPossibilities.push([hugeList[i][j][k].list[p]]); // push each config that can make the first row
                         }
-                        else {
-                            allPossibilities.forEach((possibility) => {
-                                let flag = false;
-                                for (let q = 0; q < hugeList[i][j][k].list[p].config.length; q++) {
-                                    if (hugeList[i][j][k].list[p].config[q] === possibility[possibility.length - 1].config[q]) {
-                                        flag = true;
-                                        break;
+
+                        // hugeList[i] has all the complete row sets for each permutation
+                        // hugeList[i][j] has all of the ways to make the jth row 
+                        // hugeList[i][j][k] has the kth way of composing the jth row
+                        // hugeList[i][j][k].list[p]
+
+                        else { // if we are not at the first row in newColorMapping
+                            allPossibilities.forEach((possibility) => { // for each possibility list in allPossibilities
+                                if(possibility.length === j){
+                                    let flag = false;
+                                    if(!hugeList[i][j][k].list[p].decomps){
+                                        for (let q = 0; q < hugeList[i][j][k].list[p].config.length; q++) { 
+                                            // if the config at list[p] at index q*times >= index q of the last possibility in the list's config*times, it will merge
+                                            if (hugeList[i][j][k].list[p].config[q] === possibility[possibility.length -1].config[q] || hugeList[i][j][k].list[p].config[q]*hugeList[i][j][k].list[p].times === possibility[possibility.length - 1].config[q]*possibility[possibility.length - 1].times) {
+                                                flag = true;
+                                                break;
+                                            }
+                                        }
+                                         
                                     }
+                                    else{ // this is a 3-1 possibility: [[4,2,8,0], [0,0,0,2]]
+                                        for(let q = 0; q < hugeList[i][j][k].list[p].decomps[0].length; q++){
+                                            if(hugeList[i][j][k].list[p].decomps[0].config[q] === possibility[possibility.length -1].config[q] ||
+                                                hugeList[i][j][k].list[p].decomps[0].config[q]*hugeList[i][j][k].list[p].decomps[0].times === possibility[possibility.length-1].config[q]*possibility[possibility.length-1].times ||
+                                                hugeList[i][j][k].list[p].decomps[1].config[q] === possibility[possibility.length -1].config[q] ||
+                                                hugeList[i][j][k].list[p].decomps[1].config[q]*hugeList[i][j][k].list[p].decomps[1].times === possibility[possibility.length-1].config[q]*possibility[possibility.length-1].times){
+                                                    flag = true;
+                                                    break;
+                                                }
+                                        }
+                                    }
+                                    if(!flag){
+                                        possibility.push(hugeList[i][j][k].list[p]);
+                                    } 
                                 }
-                                if (!flag) {
-                                    possibility.push(hugeList[i][j][k].list[p]);
-                                }
+                               
                             });
                         }
                     }
@@ -649,12 +675,11 @@ class TileRows {
         console.log("These ones should have no vertical similar ones: " + JSON.stringify(totalPossibilities));
         return totalPossibilities;
     }
-    /** TODO:: I still need to make sure that each one is makeable - each row has enough space and times available to be made
+    /** 
      * - One of the end rows has to be made with 1 times
     * - The one before it has to be made with at most 2 times
     * - One before that n - m times where m is the row distance from the end row with 1 times
     * - if both of the ends are 1 times, check each consecutive one with the strictest
-    // TODO: make sure that the slide moves are okay
     **/
     rowsMakeable(noVertRows) {
         let notUp = false; // impossible to make the map and be sliding up 
@@ -680,6 +705,16 @@ class TileRows {
                     if (Math.log2(noVertRows[i].rows[j].times) + 1 > j + 1) {
                         notDown = true;
                     }
+                    if(j < noVertRows[i].rows.length - 1){
+                        if(!this.checkRowsMakeable(noVertRows[i].rows[j], noVertRows[i].rows[j+1])){
+                            notDown = true;
+                        }
+                    }
+                    if(j > 0){
+                        if(!this.checkRowsMakeable(noVertRows[i].rows[j], noVertRows[i].rows[j-1])){
+                            notUp = true;
+                        }
+                    }
                 }
 
                 let slideValue = -1;
@@ -702,32 +737,130 @@ class TileRows {
         console.log("makeable rows " + JSON.stringify(makeableRows));
         return makeableRows;
     }
+
+    /**
+     * Takes in two config/config+decomp objects and returns whether any current vals * times > next[i]*times
+     * 
+     * 
+     * @param {{config: [], times: Number} || {config: [], times: Number, decomps: []}} current 
+     * @param {{config: [], times: Number} || {config: [], times: Number, decomps: []}} next 
+     * @returns True if none of the columns of the current * times is greater than that column position in next * times
+     */
+    checkRowsMakeable(current, next){
+        // either could be a 3-1 or a regular one
+        // only need to know to get the correct times for each number to be multiplied by
+        // for that index, go to both lists and see which one has a value at that index and use that times
+        let flag = false;
+        for(let i = 0; i < current.config.length; i++){
+            let currTimes = current.times;
+            let nextTimes = next.times;
+            if(current.decomp){
+                if(current.decomp[0].config[i] !== 0){
+                    currTimes = current.decomp[0].times;
+                }
+                else{
+                    currTimes = current.decomp[1].times;
+                }
+            }
+            if(next.decomp){
+                if(next.decomp[0].config[i] !== 0){
+                    nextTimes = next.decomp[0].times;
+                }
+                else{
+                    nextTimes = next.decomp[1].times;
+                }
+            }
+
+            // when times is greater than one, and times*config[i] >= next.config[i]*times
+            if(current.config[i]*currTimes == next.config[i]*nextTimes){
+                flag = true;
+            }
+        }
+        return !flag;
+    }
     // need to make a function that takes in the valid configurations that can be created on a board and translate them into sets of moves - 
     // Consisting of a move direction, and the value and spawn position of the next tile spawning in.
     // side note, I am making the move at the beginning of each row be a slide move, because that move doesn't really matter otherwise
     // 2 is going to be slide 2 and 3 is going to be slide 0
+    //TODO lots of redundancy here
     rowsToMoves(makeableRowSets) {
         let finalMoveSets = [];
         for (const rowSet of makeableRowSets) {
             let moveSet = [];
             if (rowSet.slide == 0) {
                 for (let i = 0; i < rowSet.tileRows.length; i++) {
-                    for (let j = 0; j < rowSet.tileRows[i].times; j++) {
-                        //console.log(rowSet.tileRows[i]);
-                        let decomp = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].config)]
-                        let newFirstDecomp = `3${decomp[0][1]}${decomp[0][2]}`
-                        decomp[0] = newFirstDecomp;
+                    if(rowSet.tileRows[i].decomps){
+                        let d1 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[0].config)];
+                        let d2 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[1].config)];
+                        let nd1 = `3${d1[0][1]}${d2[0][2]}`
+                        let nd2 = `3${d2[0][1]}${d2[0][2]}`
+                        d1[0] = nd1;
+                        d2[0] = nd2;
                         if(moveSet.length < 1){
-                            moveSet = decomp;
+                            moveSet = [d1];
+                            for(let j = 0; j < rowSet.tileRows[i].decomps[1].times; j++){
+                                moveSet = moveSet.concat(d2);
+                            }
+                            for(let j = 1; j < rowSet.tileRows[i].decomps[0].times; j++){
+                                moveSet = moveSet.concat(d1);
+                            }
                         }
                         else{
-                            moveSet = moveSet.concat(decomp)
+                            moveSet = moveSet.concat(d1);
+                            for(let j = 0; j < rowSet.tileRows[i].decomps[1].times; j++){
+                                moveSet = moveSet.concat(d2);
+                            }
+                            for(let j = 1; j < rowSet.tileRows[i].decomps[0].times; j++){
+                                moveSet = moveSet.concat(d1);
+                            }
+                            console.log(moveSet);
                         }
+                    }
+                    else{
+                        for (let j = 0; j < rowSet.tileRows[i].times; j++) {
+                            //console.log(rowSet.tileRows[i]);
+                            let decomp = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].config)]
+                            let newFirstDecomp = `3${decomp[0][1]}${decomp[0][2]}`
+                            decomp[0] = newFirstDecomp;
+                            if(moveSet.length < 1){
+                                moveSet = decomp;
+                            }
+                            else{
+                                moveSet = moveSet.concat(decomp)
+                            } 
+                        } 
                     }
                 }
             }
             else if (rowSet.slide == 2) {
                 for (let i = rowSet.tileRows.length - 1; i >= 0; i--) {
+                    if(rowSet.tileRows[i].decomps){
+                        let d1 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[0].config)];
+                        let d2 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[1].config)];
+                        let nd1 = `2${d1[0][1]}${d2[0][2]}`
+                        let nd2 = `2${d2[0][1]}${d2[0][2]}`
+                        d1[0] = nd1;
+                        d2[0] = nd2;
+                        if(moveSet.length < 1){
+                            moveSet = [d1];
+                            for(let j = 0; j < rowSet.tileRows[i].decomps[1].times; j++){
+                                moveSet = moveSet.concat(d2);
+                            }
+                            for(let j = 1; j < rowSet.tileRows[i].decomps[0].times; j++){
+                                moveSet = moveSet.concat(d1);
+                            }
+                        }
+                        else{
+                            moveSet = moveSet.concat(d1);
+                            for(let j = 0; j < rowSet.tileRows[i].decomps[1].times; j++){
+                                moveSet = moveSet.concat(d2);
+                            }
+                            for(let j = 1; j < rowSet.tileRows[i].decomps[0].times; j++){
+                                moveSet = moveSet.concat(d1);
+                            }
+                            console.log(moveSet);
+                        }
+                    }
                     for (let j = 0; j < rowSet.tileRows[i].times; j++) {
                         //console.log(rowSet.tileRows[i]);
                         let decomp = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].config)];
@@ -738,7 +871,7 @@ class TileRows {
                         }
                         else{
                             moveSet = moveSet.concat(decomp)
-                        }
+                        } 
                     }
                 }
             }
@@ -767,7 +900,7 @@ class TileRows {
                 if(set.moves[i][2] === '0') pos = height + "RR";
                 objectList.push({move: move, value: val, position: pos})
             }
-            totalList.push(objectList);
+            totalList.push({moves: objectList, mapping: set.mapping});
         }
         console.log(JSON.stringify(totalList));
         return totalList;
