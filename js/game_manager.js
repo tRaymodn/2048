@@ -291,6 +291,7 @@ GameManager.prototype.setup = function () {
     this.tileRows = new TileRows();
     this.tileRows = new TileRows();
   } else {
+    */
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
