@@ -77,16 +77,14 @@ document.getElementById('singleMove').addEventListener("click", () => {
 })
 
 document.getElementById('simulate').addEventListener("click",() =>{
-  console.log(scorekeeper(4))
+  console.log(scorekeeper(100))
 })
 
 document.getElementById('autoMove').addEventListener("click", () => {
   if(!autoMoving){
     interval = setInterval(() => {
       let move = scoreboard();
-      console.log(fourBest(game));
       game.move(move);
-     
       let state = game.getBoardState();
       //console.log(state);
       dir++;
@@ -1082,7 +1080,7 @@ const points = function(game, grid, dir){
   console.log("direction" , dir);
   //console.log("Scores", nextScr , currScr)
   console.log("Lg: ", lg , "Chain:" , nextScr - currScr ,"load", ld , "lock" ,lk , "mainchain:" ,  mt, "adjLoad" , adjLoad)
-  let eq =  lg + (nextScr - currScr) + ld +  mt  + adjLoad // + lk (maybe unimportant)
+  let eq =  lg + (nextScr - currScr) + ld +  mt  + adjLoad //+ lk //(maybe unimportant)
       return eq;
   }
 
@@ -1290,19 +1288,28 @@ const loadAdj = function(grid, positions) {
   }
   return values;
 }
+// TODO: - keeping track of date of fourBest to have metric of progress
 
-const scorekeeper = function(iter){
-  let scores = []
-  for(let i = 0; i < iter; i++){
-    while (!game.isGameTerminated()){
+const scorekeeper = function(iter) {
+  let scores = [];
+  let date = new Date();
+  let sp = 100;
+  for(let i = 0 ; i <= iter; i++){
+    if (!game.isGameTerminated()) {
       let move = scoreboard();
       game.move(move);
-    } 
-    scores.push(fourBest())
-    game.restart();
+      i = i - 1
+    } else{
+      scores.push(fourBest());
+      game.restart();
+    }
   }
-  return scores; 
-}
+  scores.unshift(getScoreMetrics(scores));
+  scores.unshift(date);
+  game.download("scores.txt", JSON.stringify(scores));
+  return scores;
+};
+
 
 const fourBest = function(){
 
@@ -1325,5 +1332,34 @@ let compare = largest[0].value;
     compare /= 2
   }
   return best; 
+}
+
+const getScoreMetrics = function(arr){
+let percentages = [];
+arr.shift();
+let cnt = 0;
+
+let lowest = Math.min(...arr.map(subArray => subArray[0]));
+let largest = Math.max(...arr.map(subArray => subArray[0]));
+
+let compare = [];
+for (let i = lowest; i <= largest; i *= 2){
+  compare.push(i)
+}
+
+
+for(let i = 0 ; i < compare.length; i++){
+  for(let j = 0; j < arr.length; j++){
+    if(compare[i] == arr[j][0]){
+      cnt++
+    }
+    if (j == arr.length - 1){
+      percentages.push({val: `${compare[i]}`, cnt});
+      cnt = 0;
+    }
+  }
+}
+return percentages;
+
 }
 
