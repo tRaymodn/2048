@@ -289,7 +289,9 @@ GameManager.prototype.setup = function () {
     this.states = [];
     this.moves = [];
     this.tileRows = new TileRows();
+    this.tileRows = new TileRows();
   } else {
+    */
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
@@ -299,19 +301,7 @@ GameManager.prototype.setup = function () {
     this.moves = [];
     this.tileInsert = "random"
     this.tileValue = 0;
-    this.tileRows = new TileRows();
-  }
-  */
-  this.grid        = new Grid(this.size);
-  this.score       = 0;
-  this.over        = false;
-  this.won         = false;
-  this.keepPlaying = false;
-  this.states = [];
-  this.moves = [];
-  this.tileInsert = "random"
-  this.tileValue = 0;
-  this.tileRows = new TileRows();
+    //this.tileRows = new TileRows();
 
   // Add the initial tiles
   if(!this.designer){
