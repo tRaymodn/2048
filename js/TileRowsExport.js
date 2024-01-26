@@ -3,6 +3,8 @@ class TileRows {
         this.configurations = [];
         this.configDecomps = [];
         this.nonReversibleConfigs = [];
+        this.filledConfigs = [];
+        this.filledDecomps = [];
     }
     // ChatGPT
     arraysAreEqual(array1, array2) {
@@ -158,6 +160,7 @@ class TileRows {
                             //console.log("No more moves");
                             if (this.inConfiguration(newArray) == -1) {
                                 this.configurations.push(newArray);
+                                this.filledConfigs.push(newArray);
                                 //console.log(" Added " + newArray + " no more");
                                 let nonReversible = true;
                                 for (let g = 0; g < Math.floor(newArray.length / 2); g++) {
@@ -183,13 +186,13 @@ class TileRows {
                                 let currentMoves = Array(moves.length);
                                 for (let r = 0; r < moves.length; r++) currentMoves[r] = moves[r]; // fill currentMoves
                                 this.configDecomps.push(currentMoves);
+                                this.filledDecomps.push(currentMoves);
                                 //console.log("Decomp move: " + move + " no more");
                             }
                         }
 
                     }
                     else {
-                        //console.log("I Crapped");
                         if (i == 0) {
                             noRight = true;
                         }
@@ -211,6 +214,15 @@ class TileRows {
                 }
             }
             if (matches == arr.length) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    inFilledConfigs(arr) {
+        for(let i = 0; i < this.filledConfigs.length; i++){
+            let matches = 0;
+            if(this.arraysAreEqual(arr, this.filledConfigs[i])){
                 return i;
             }
         }
@@ -246,6 +258,7 @@ class TileRows {
         }
         return this.inConfiguration(match);
     }
+    //TODO can simplify this !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     findHalves(row, halvesSoFar, times) {
         let r = [...row];
         let flag = false;
@@ -270,11 +283,11 @@ class TileRows {
         }
     }
     makeRow(row) {
-        let ind = this.inConfiguration(row);
+        let ind = this.inFilledConfigs(row);
         let list = []; // dont know what this is
         let size = 0;
         if (ind != -1) { // if the given row is one that can be made in a single row, then just return that
-            list.push(this.configDecomps[ind]);
+            list.push(this.filledDecomps[ind]);
             //console.log(`${row} is in configs`);
             return { list: [{ config: row, times: 1 }], len: 0 };
         }
@@ -808,8 +821,8 @@ class TileRows {
             if (rowSet.slide == 0) {
                 for (let i = 0; i < rowSet.tileRows.length; i++) {
                     if(rowSet.tileRows[i].decomps){
-                        let d1 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[0].config)];
-                        let d2 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[1].config)];
+                        let d1 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[0].config)];
+                        let d2 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[1].config)];
                         let nd1 = `3${d1[0][1]}${d2[0][2]}`
                         let nd2 = `3${d2[0][1]}${d2[0][2]}`
                         d1[0] = nd1;
@@ -837,7 +850,7 @@ class TileRows {
                     else{
                         for (let j = 0; j < rowSet.tileRows[i].times; j++) {
                             //console.log(rowSet.tileRows[i]);
-                            let decomp = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].config)]
+                            let decomp = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].config)]
                             let newFirstDecomp = `3${decomp[0][1]}${decomp[0][2]}`
                             decomp[0] = newFirstDecomp;
                             if(moveSet.length < 1){
@@ -853,8 +866,8 @@ class TileRows {
             else if (rowSet.slide == 2) {
                 for (let i = rowSet.tileRows.length - 1; i >= 0; i--) {
                     if(rowSet.tileRows[i].decomps){
-                        let d1 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[0].config)];
-                        let d2 = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].decomps[1].config)];
+                        let d1 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[0].config)];
+                        let d2 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[1].config)];
                         let nd1 = `2${d1[0][1]}${d2[0][2]}`
                         let nd2 = `2${d2[0][1]}${d2[0][2]}`
                         d1[0] = nd1;
@@ -881,7 +894,7 @@ class TileRows {
                     }
                     for (let j = 0; j < rowSet.tileRows[i].times; j++) {
                         //console.log(rowSet.tileRows[i]);
-                        let decomp = this.configDecomps[this.inConfiguration(rowSet.tileRows[i].config)];
+                        let decomp = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].config)];
                         let newFirstDecomp = `2${decomp[0][1]}${decomp[0][2]}`
                         decomp[0] = newFirstDecomp;
                         if(moveSet.length < 1){
