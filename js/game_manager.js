@@ -144,6 +144,11 @@ plus.addEventListener('click', () => {
 
     this.restart();
     this.actuate();
+    if(this.designer){
+      let zeros = Array(Number(this.grid.size)).fill(0);
+      // Fill in configurations and configDecomps in tileRows
+      this.tileRows.evaluateState(zeros, []);
+    }
   }
 });
 
@@ -157,6 +162,11 @@ minus.addEventListener('click', () => {
     
     this.restart();
     this.actuate();
+    if(this.designer){
+      let zeros = Array(Number(this.grid.size)).fill(0);
+      // Fill in configurations and configDecomps in tileRows
+      this.tileRows.evaluateState(zeros, []);
+    }
   }
 });
 
@@ -168,7 +178,6 @@ GameManager.prototype.makeImage = function(colorMap, mapping, time){
     let index = 0;
     for(const prop in mapping){ // set tile class colors correctly
       let mappingNumbers = moveSets[0].mapping[index.toString()];
-      console.log(typeof(mappingNumbers))
       if(typeof(mappingNumbers) === "object"){
         mappingNumbers.forEach((number) => {
           this.actuator.changeTileClassColor(number, prop);
@@ -179,14 +188,18 @@ GameManager.prototype.makeImage = function(colorMap, mapping, time){
       }
       index = index + 1;
     }
-    this.makeImageMove(moveSets[0].moves, time);
+    this.makeImageMove(moveSets[0].moves, time, true);
   }
   else{
     let colorMapTranspose = colorMap[0].map((_, colIndex) => colorMap.map(row => row[colIndex]));
-    console.log("attempting with columns")
-    let colMoveSet = this.tileRows.tileAssignments(colorMapTranspose);
+    let newColorMapTranspose = Array(colorMapTranspose.length);
+    for(let i = 0; i < colorMapTranspose.length; i++){
+      newColorMapTranspose[i] = colorMapTranspose[colorMapTranspose.length - 1 - i];
+    }
+    console.log("attempting with columns" + JSON.stringify(newColorMapTranspose))
+    let colMoveSet = this.tileRows.tileAssignments(newColorMapTranspose);
     if(colMoveSet.length > 0){
-      this.makeImageMove(colMoveSet[0].moves, time);
+      this.makeImageMove(colMoveSet[0].moves, time, false);
     }
     else{
       console.log("cannot be made at this time")
@@ -194,28 +207,48 @@ GameManager.prototype.makeImage = function(colorMap, mapping, time){
   }
 }
 
-GameManager.prototype.makeImageMove = function(moves, time){
+GameManager.prototype.makeImageMove = function(moves, time, isRow){
    // this setTimout waits time, and then seems to do all of the moves at once.
-    this.designerMove(moves[0].move, moves[0].value, moves[0].position);
+    this.designerMove(moves[0].move, moves[0].value, moves[0].position, isRow);
     console.log(this.grid)
   if(moves.length > 1){
       let newMoves = [...moves];
       newMoves.shift();
-      setTimeout(() => { // this made everything fall into place boiiii
-        this.makeImageMove(newMoves, time);
+      setTimeout(() => { 
+        this.makeImageMove(newMoves, time, isRow);
       }, time);
       
     }
 }
 
 // if grid is empty, insert a value at the given position, else, just set the insert and value to be correct and make the move
-GameManager.prototype.designerMove = function(move, value, placement){
+GameManager.prototype.designerMove = function(move, value, placement, isRow){
   let flag = false;
   for(const row of this.grid.cells){
     for(const val of row){
       if(val !== null){
         flag = true;
       }
+    }
+  }
+  if(!isRow){
+    switch(placement){
+      case "bRR":
+        placement = "bL";
+        break;
+      case "bLR":
+        placement = "tL";
+        break;
+      case "tRR":
+        placement = "bR";
+        break;
+      case "tLR":
+        placement = "tR";
+    }
+
+    move = move + 1;
+    if(move > 3){
+      move = 0
     }
   }
   if(!flag){
@@ -244,6 +277,7 @@ GameManager.prototype.isGameTerminated = function () {
 GameManager.prototype.setup = function () {
   var previousState = this.storageManager.getGameState();
   
+  /*
   // Reload the game from a previous game if present
   if (previousState) {
     this.grid        = new Grid(previousState.grid.size,
@@ -254,7 +288,7 @@ GameManager.prototype.setup = function () {
     this.keepPlaying = previousState.keepPlaying;
     this.states = [];
     this.moves = [];
-    //this.tileRows = new TileRows();
+    this.tileRows = new TileRows();
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
@@ -265,12 +299,28 @@ GameManager.prototype.setup = function () {
     this.moves = [];
     this.tileInsert = "random"
     this.tileValue = 0;
-    //this.tileRows = new TileRows();
+    this.tileRows = new TileRows();
+  }
+  */
+  this.grid        = new Grid(this.size);
+  this.score       = 0;
+  this.over        = false;
+  this.won         = false;
+  this.keepPlaying = false;
+  this.states = [];
+  this.moves = [];
+  this.tileInsert = "random"
+  this.tileValue = 0;
+  this.tileRows = new TileRows();
 
-    // Add the initial tiles
-    if(!this.designer){
-     this.addStartTiles(); 
-    }
+  // Add the initial tiles
+  if(!this.designer){
+    this.addStartTiles(); 
+  }
+  else{
+    let zeros = Array(Number(this.grid.size)).fill(0);
+    // Fill in configurations and configDecomps in tileRows
+    this.tileRows.evaluateState(zeros, []);
   }
 
   //Set the position classes
@@ -278,10 +328,6 @@ GameManager.prototype.setup = function () {
 
   // Update the actuator
   this.actuate();
-
-  let zeros = Array(Number(this.size)).fill(0);
-  // Fill in configurations and configDecomps in tileRows
-  this.tileRows.evaluateState(zeros, []);
 };
 
 // Set up the initial tiles to start the game with

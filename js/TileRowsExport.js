@@ -122,6 +122,7 @@ class TileRows {
                             if (this.inConfiguration(newArray) == -1) { // if current state is not in configs already
                                 this.configurations.push(newArray);
                                 //console.log("Added " + newArray);
+                                
                                 let nonReversible = true;
                                 for (let g = 0; g < Math.floor(newArray.length / 2); g++) {
                                     if (newArray[g] != newArray[newArray.length - 1 - g]) {
@@ -132,7 +133,7 @@ class TileRows {
                                 if (nonReversible) {
                                     this.nonReversibleConfigs.push(newArray);
                                 }
-
+                                
                                 let moves = [...prevList]; // copy prevList
                                 let m = i;
                                 if (noRight) {
@@ -146,7 +147,7 @@ class TileRows {
                                 let currentMoves = Array(moves.length);
                                 for (let r = 0; r < moves.length; r++) currentMoves[r] = moves[r]; // fill currentMoves
                                 this.configDecomps.push(currentMoves);
-                                //console.log("Decomp move: " + move);
+                                console.log("Decomp move: " + move);
 
                                 this.evaluateState(newArray, moves); // this is the only thing that is different I think
                             }
@@ -199,7 +200,7 @@ class TileRows {
                 }
             }
         }
-        //console.log(arr + " is finished, config size: " + this.configurations.length);
+        console.log(arr + " is finished, config size: " + this.configurations.length);
     }
     inConfiguration(arr) {
         for (let i = 0; i < this.configurations.length; i++) {
@@ -362,7 +363,7 @@ class TileRows {
                 }
                 if(zeros === row.length - 1){
                     oneList.push(r);
-                }
+                } 
             }
             //console.log(bestOnes);
             list = bestOnes;
@@ -377,13 +378,13 @@ class TileRows {
                                 let t = row.times >= oneList[i].times ? row.times : oneList[i].times;
                                 let newRow = {config: row.config, times: t, decomp: [row, oneList[i]]}
                                 newRow.config[0] = oneList[i].config[0];
-                                list.push(newRow)
+                                //list.push(newRow)
                             }
                             else if(row.config[row.config.length -1] === 0 && oneList[i].config[row.config.length - 1] !== 0){
                                 let t = row.times >= oneList[i].times ? row.times : oneList[i].times;
                                 let newRow = {config: row.config, times: t, decomp: [row, oneList[i]]}
                                 newRow.config[newRow.config.length -1] = oneList[i].config[oneList[i].config.length-1];
-                                list.push(newRow);
+                                //list.push(newRow);
                             }
                         }
                     })
@@ -561,7 +562,7 @@ class TileRows {
                             if(res.len === 1){
                                 //console.log(res)
                             }
-                            if (res.len === 0 || res.len === 1) { // only pushing if makeRow() returns a full row
+                            if (res.len === 0) { // only pushing if makeRow() returns a full row
                                 bestPossibilities.push({ list: res.list, row: colors[times] });
                             }
                         }
@@ -585,17 +586,34 @@ class TileRows {
                 }
                 else {
                     //console.log("makeRow() returned 4 for all rows with this permutation");
-                    makeablePerms.push(eachRowPossibilities);
-                    makeableMapping.push(permMap);
+                    //makeablePerms.push(eachRowPossibilities);
+                    //makeableMapping.push(permMap);
+                    //console.log("Checking Vertical Viability ");
+                    let noVerts = this.noVertSimilar([eachRowPossibilities], colors.length, [permMap]);
+                    if (noVerts.length > 0) {
+                        //console.log("Checking Row Makeability ");
+                        let rowMakeable = this.rowsMakeable(noVerts);
+                        if (rowMakeable.length > 0) {
+                            let finalMoves = this.rowsToMoves(rowMakeable);
+                            let mmm = this.movesToObjects(finalMoves);
+                            return mmm;
+                        }
+                        else {
+                            //console.log("Rows not Makeable");
+                        }
+                    }
+                    else {
+                        //console.log("Rows not slidable");
+                    }
                     //console.log(perm);
                 }
             }
-
+            // this should never run
             if (makeablePerms.length > 0) {
-                console.log("Checking Vertical Viability ");
+                //console.log("Checking Vertical Viability ");
                 let noVerts = this.noVertSimilar(makeablePerms, colors.length, makeableMapping);
                 if (noVerts.length > 0) {
-                    console.log("Checking Row Makeability ");
+                    //console.log("Checking Row Makeability ");
                     let rowMakeable = this.rowsMakeable(noVerts);
                     if (rowMakeable.length > 0) {
                         let finalMoves = this.rowsToMoves(rowMakeable);
@@ -603,11 +621,11 @@ class TileRows {
                         return mmm;
                     }
                     else {
-                        console.log("Rows not Makeable");
+                        //console.log("Rows not Makeable");
                     }
                 }
                 else {
-                    console.log("Rows not slidable");
+                    //console.log("Rows not slidable");
                 }
             }
         }
@@ -615,7 +633,7 @@ class TileRows {
     }
     // make a function to go through makeablePerms - the rows that can be made, and find a combination of rows that do not have any similarities vertically
     noVertSimilar(hugeList, arraySize, mappings) {
-        console.log(hugeList)
+        //console.log(hugeList)
         let totalPossibilities = [];
         for (let i = 0; i < hugeList.length; i++) {
             let allPossibilities = [];
@@ -672,7 +690,7 @@ class TileRows {
                 }
             }
         }
-        console.log("These ones should have no vertical similar ones: " + JSON.stringify(totalPossibilities));
+        //console.log("These ones should have no vertical similar ones: " + JSON.stringify(totalPossibilities));
         return totalPossibilities;
     }
     /** 
@@ -734,7 +752,7 @@ class TileRows {
             }
 
         }
-        console.log("makeable rows " + JSON.stringify(makeableRows));
+        //console.log("makeable rows " + JSON.stringify(makeableRows));
         return makeableRows;
     }
 
@@ -772,7 +790,7 @@ class TileRows {
             }
 
             // when times is greater than one, and times*config[i] >= next.config[i]*times
-            if(current.config[i]*currTimes == next.config[i]*nextTimes){
+            if(current.config[i]*currTimes == next.config[i]*nextTimes || current.config[i]*currTimes == next.config[i] || current.config[i] == next.config[i]*nextTimes){
                 flag = true;
             }
         }
@@ -902,7 +920,7 @@ class TileRows {
             }
             totalList.push({moves: objectList, mapping: set.mapping});
         }
-        console.log(JSON.stringify(totalList));
+        //console.log(JSON.stringify(totalList));
         return totalList;
     }
     /**
@@ -945,8 +963,8 @@ class TileRows {
      */
     adjacentVals(row) {
         let flag = false;
-        for (let i = 1; i < row.length - 1; i++) {
-            if (row[i - 1] === row[i] || row[i + 1] === row[i]) {
+        for (let i = 0; i < row.length - 1; i++) {
+            if (row[i + 1] === row[i]) {
                 flag = true;
             }
         }
@@ -983,7 +1001,9 @@ class TileRows {
 
             for (let i = startIndex; i < arr.length; i++) {
                 currentCombo.push(arr[i]);
-                combine(i + 1, currentCombo);
+                //if(arr.length - startIndex < m){
+                    combine(i + 1, currentCombo);
+                //}
                 currentCombo.pop();
             }
         }
@@ -1000,4 +1020,3 @@ class TileRows {
         }
     }
 }
- 

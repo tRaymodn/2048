@@ -39,6 +39,11 @@ document.getElementById('designerButton').addEventListener("click", () => {
     game.actuator.clearContainer(game.actuator.tileContainer);
     game.designer = !game.designer;
     makeImagePickerBoard(game.size);
+    console.log(game.size);
+    let zeros = Array(Number(game.grid.size)).fill(0);
+    // Fill in configurations and configDecomps in tileRows
+    game.tileRows.evaluateState(zeros, []);
+    console.log(game.tileRows.getFilledConfigs());
   }
   else{
     game.actuator.clearContainer(document.getElementById("colorPicker"));
@@ -132,11 +137,7 @@ const makeImagePickerBoard = function(size){
 }
 
 const changePickerTileColor = function(htmlTile){
-  console.log(getComputedStyle(htmlTile).backgroundColor)
-  //switch(htmlTile.style.backgroundColor)
-  //htmlTile.setAttribute("style", "background-color: red");
   let style = getComputedStyle(htmlTile).backgroundColor;
-  console.log(style)
   let newColor;
   switch(style){
     case 'rgb(0, 0, 0)':
@@ -195,9 +196,7 @@ const makeColorBoardFromPicker = function(){
     }
     colorBoard.push(col);
   }
-  console.log(colorBoard);
   let output = colorBoard[0].map((_, colIndex) => colorBoard.map(row => row[colIndex])); // https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript
-  console.log(output)
   return {map: output, mapping: mapping};
 }
 
