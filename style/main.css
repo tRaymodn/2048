@@ -1,14 +1,19 @@
 @import url(fonts/clear-sans.css);
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap');
 html, body {
   margin: 0;
   padding: 0;
-  background: #faf8ef;
-  color: #776e65;
-  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+  color: white;
+  font-family: 'Gowun Batang', serif;
   font-size: 18px; }
 
 body {
-  margin: 80px 0; }
+  margin: 80px 0; 
+  background-image: url("./paper-517134_1280.jpg");
+  background-size:300px;
+  background-color: #47423f;
+  background-blend-mode: difference;
+}
 
 .heading:after {
   content: "";
@@ -101,7 +106,7 @@ p {
   line-height: 1.65; }
 
 a {
-  color: #776e65;
+  color: #32302e;
   font-weight: bold;
   text-decoration: underline;
   cursor: pointer; }
@@ -116,8 +121,15 @@ hr {
   margin-bottom: 30px; }
 
 .container {
+  background-image: url(./3234954.jpg);
+  background-size: 880px;
+  background-repeat: no-repeat;
+  background-color: rgb(161, 152, 139);
+  background-blend-mode: difference;
+  padding-left: 10px;
+  padding-right: 10px;
   width: 800px;
-  margin: 0 auto; }
+  margin: 0 auto;}
 
 @-webkit-keyframes fade-in {
   0% {
@@ -149,7 +161,7 @@ hr {
   -ms-user-select: none;
   -ms-touch-action: none;
   touch-action: none;
-  background: #bbada0;
+  background: rgb(79, 74, 74);
   border-radius: 6px;
   width: 800px;
   height: 800px;
@@ -220,7 +232,7 @@ hr {
   margin-right: 15px;
   float: left;
   border-radius: 3px;
-  background: rgba(238, 228, 218, 0.35); }
+  background: darkgrey; }
   .grid-cell:last-child {
     margin-right: 0; }
 
@@ -232,6 +244,10 @@ hr {
   width: 107px;
   height: 107px;
   line-height: 107px; }
+
+.tile-inner{
+  border: solid white 1px;
+}
 
 .tile {
   position: absolute;
@@ -600,10 +616,8 @@ hr {
     margin-top: 30px !important; } }
 
 #colorPickerArea{
-  margin-top: 50px;
-  float: right;
+  display: inline-block;
   background-color: grey;
-  display: inline;
 }
 
 #colorPicker{
@@ -612,14 +626,182 @@ hr {
 }
 
 .colorTile{
-  margin-right: 3px;
-  margin-top: 3px;
-  width: 30px;
-  height: 30px;
+  margin: 1.5px;
+  width: 1em;
+  height: 1em;
   background-color: black;
 }
 
 .colorTileRow{
   display: flex;
   flex-direction: column;
+}
+
+#sizeInputContainer{
+  max-width: 30%;
+  display: flex;
+  flex-direction: column;
+  float: left;
+  margin-left: 5%;
+  margin-top: 2%;
+}
+
+.inputSize, .notInputSize{
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.upBtn{
+  width:50%;
+  margin-left:25%;
+  border-top-right-radius: 100%;
+  border-top-left-radius: 100%;
+}
+
+.downBtn{
+  width: 50%;
+  margin-left:25%;
+  border-bottom-right-radius: 100%;
+  border-bottom-left-radius: 100%;
+}
+
+.downBtn:active{
+  width: 50%;
+  margin-left: 25%;
+  border-bottom-right-radius: 100%;
+  border-bottom-left-radius: 100%;
+  transform: translateY(4px);
+}
+
+.upBtn:active{
+  width:50%;
+  margin-left:25%;
+  border-top-right-radius: 100%;
+  border-top-left-radius: 100%;
+  transform: translateY(-4px);
+}
+
+#leftButtonsDiv{
+  display: flex;
+  float: left;
+  flex-direction: column;
+  width: 13%;
+}
+
+#makeImageButton{
+  display: none;
+}
+
+#rightButtonsDiv{
+  display: none;
+  float: right;
+  flex-direction: column;
+  width: 13%;
+}
+
+#designerDiv{
+  margin-top: 5%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+#colorChangeDiv{
+  display: none;
+  flex-direction: row;
+  flex-wrap: wrap-reverse;
+  width: 100%;
+  height: 7vh;
+  align-content: space-around;
+  justify-content: center;
+}
+
+.colorChoice{
+  height: 36%;
+  width: 24%;
+  border: solid black 1px;
+  background-color: blanchedalmond;
+}
+
+#colorChangeDivContainer{
+  width: 13%;
+  height: 7vh;
+}
+
+#currentColor{
+  width: 1vh; 
+  height: 1vh;
+  background-color: white;
+  float: left;
+  margin-left: 5%;
+  margin-top: 10%;
+}
+
+#currentColorSpan{
+  font-size: 0.7em;
+  float: left;
+  margin-top: 5%;
+}
+
+#currentColorDiv{
+  display: none;
+  margin-left:7%;
+}
+
+button{
+  font-family: 'Gowun Batang', serif;
+  background-image: url(./koa4.jpg);
+  background-size: cover;
+  background-color: rgb(206 206 206);
+  background-blend-mode: color-burn;
+  font-weight: 800;
+}
+
+input{
+  font-family: 'Gowun Batang', serif;
+}
+
+#designerButton:hover, #makeImageButton:hover{
+  text-decoration: underline;
+}
+
+#designerButton{
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+
+#colorPickerReset{
+  margin-bottom: 7px;
+}
+
+#loadingDiv{
+  display: none;
+  margin-bottom: 38px;
+}
+
+#loader{
+  display: none;
+  float: left;
+  margin-top: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: lightblue;
+  animation:move 4s linear infinite;
+}
+
+@keyframes move{
+  0%{
+    transform: scaleX(1.0) translateX(0px);
+  }
+  50%{
+    transform: scaleX(3.0) translateX(40px);
+  }
+  100%{
+    transform: scaleX(1.0) translateX(0px);
+  }
+}
+
+#footer{
+  background-color: rgba(128, 128, 128, 0.7);
 }

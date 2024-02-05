@@ -73,6 +73,16 @@ HTMLActuator.prototype.changeTileClassColor = function(tileClass, color){
   }`
 }
 
+HTMLActuator.prototype.resetTileClassColors = function(){
+  let colorArray = ["#ac6767", "#c85a5a", "#af3a3a", "#9a1616", "#710c0c", "#450505", "#edcf72", "#edcc61", "#edc850", "#edc53f", "#edc22e"];
+  for(let i = 0; i < 11; i++){
+    this.styleElement.textContent += `.tile.tile-${Math.pow(2, i+1)} .tile-inner {
+      color: white;
+      background-color: ${colorArray[i]};
+    }`
+  }
+}
+
 // Continues the game (both restart and keep playing)
 HTMLActuator.prototype.continueGame = function () {
   this.clearMessage();

@@ -8,11 +8,31 @@ let interval;
 let dir = 0;
 let autoMoving = false;
 let sp = 500;
+let currentColor = "rgb(255, 255, 255)";
 
-document.getElementById('makeImageButton').addEventListener("click", () => {
+window.onload = function() {
+  let colorPickers = document.getElementsByClassName("colorChoice");
+  for(const square of colorPickers){
+    square.addEventListener("click", () =>{
+      currentColor = square.style.backgroundColor;
+      document.getElementById("currentColor").style.backgroundColor = currentColor;
+    })
+  }
+}
+
+document.getElementById('makeImageButton').addEventListener("click", async function(){
   if(game.designer){
     let colorMap = makeColorBoardFromPicker();
-    game.makeImage(colorMap.map, colorMap.mapping, 200);
+    let openLoad = new Promise((resolve, reject) => {
+      document.getElementById("loadingDiv").style.display = "block";
+      document.getElementById("loader").style.display = "block";
+      resolve(true);
+    })
+    openLoad.then(() =>{
+      setTimeout(() => {
+        game.makeImage(colorMap.map, colorMap.mapping, 200);
+      },20);
+    })
   }
   
 })
@@ -39,13 +59,23 @@ document.getElementById('designerButton').addEventListener("click", () => {
     game.actuator.clearContainer(game.actuator.tileContainer);
     game.designer = !game.designer;
     makeImagePickerBoard(game.size);
+    document.getElementById("colorChangeDiv").style.display = "flex";
+    document.getElementById("currentColorDiv").style.display = "block";
+    document.getElementById("rightButtonsDiv").style.display = "flex";
+    document.getElementById("makeImageButton").style.display = "block";
     console.log(game.size);
     let zeros = Array(Number(game.grid.size)).fill(0);
     // Fill in configurations and configDecomps in tileRows
     game.tileRows.evaluateState(zeros, []);
     console.log(game.tileRows.getFilledConfigs());
+    document.getElementById("designerButton").innerHTML = "Close Designer";
   }
   else{
+    document.getElementById("colorChangeDiv").style.display = "none";
+    document.getElementById("currentColorDiv").style.display = "none";
+    document.getElementById("rightButtonsDiv").style.display = "none";
+    document.getElementById("makeImageButton").style.display = "none";
+    document.getElementById("designerButton").innerHTML = "Open Designer";
     game.actuator.clearContainer(document.getElementById("colorPicker"));
     game.designer = !game.designer;
     game.setup();
@@ -54,7 +84,18 @@ document.getElementById('designerButton').addEventListener("click", () => {
   //game.actuator.addTile({x: 0, y: 0, value: 2}, game.size);
 })
 
-
+document.getElementById("toggleColorTiles").addEventListener("click", () => {
+  if(game.colorsActive){
+    game.actuator.resetTileClassColors();
+    game.colorsActive = false;
+  }
+  else if(game.colorMappings.length > 0){
+    game.colorMappings.forEach((mapping) => {
+      game.actuator.changeTileClassColor(mapping.tile, mapping.color);
+    })
+    game.colorsActive = true;
+  }
+})
 
 
 document.getElementById('speedP').addEventListener("click", () => {
@@ -101,21 +142,22 @@ document.getElementById('autoMove').addEventListener("click", () => {
     autoMoving = false;
   }
 })
-
+/*
 document.getElementById('submitInputType').addEventListener("click", () => {
   let type = document.getElementById("inputType").value
   game.changeTileInsert(type);
   document.getElementById('inputType').value = "";
 })
 
-document.getElementsByClassName('heading')[0].addEventListener("click", ()=> {
-  makeCheckerboard();
-})
-
 document.getElementById("submitValue").addEventListener("click", () => {
   let val = document.getElementById("inputValue").value
   game.changeTileValue(val);
   document.getElementById('inputValue').value = "";
+})
+*/
+
+document.getElementById("colorPickerReset").addEventListener("click", () => {
+  resetColorBoard();
 })
 
 const makeImagePickerBoard = function(size){
@@ -137,6 +179,7 @@ const makeImagePickerBoard = function(size){
 const changePickerTileColor = function(htmlTile){
   let style = getComputedStyle(htmlTile).backgroundColor;
   let newColor;
+  /*
   switch(style){
     case 'rgb(0, 0, 0)':
       newColor = "rgb(255, 0, 0)";
@@ -169,8 +212,17 @@ const changePickerTileColor = function(htmlTile){
       newColor = "rgb(0, 0, 0)";
       break;
   }
+  */
+  newColor = currentColor;
   htmlTile.setAttribute("style", `background-color: ${newColor}`);
-  makeColorBoardFromPicker()
+  makeColorBoardFromPicker();
+}
+
+const resetColorBoard = function(){
+  let tiles = document.getElementsByClassName("colorTile");
+  for(let t of tiles){
+    t.style.backgroundColor = "rgb(0, 0, 0)";
+  }
 }
 
 const makeColorBoardFromPicker = function(){

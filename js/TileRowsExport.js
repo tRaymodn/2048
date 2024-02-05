@@ -221,7 +221,6 @@ class TileRows {
     }
     inFilledConfigs(arr) {
         for(let i = 0; i < this.filledConfigs.length; i++){
-            let matches = 0;
             if(this.arraysAreEqual(arr, this.filledConfigs[i])){
                 return i;
             }
@@ -318,6 +317,7 @@ class TileRows {
             // Start from both sides out and find sets of tiles and see if each side can get made
             // ORRR if half of it can be made, because then we can just do the same thing twice!!
             // ORRRR if a quarter of it can be made or similar
+            /*
             let validLeft = [];
             for (let i = 0; i < row.length; i++) {
                 let left = Array(row.length).fill(0);
@@ -351,6 +351,13 @@ class TileRows {
             for (const h of validLeft) {
                 allValid.push(h);
             }
+            */
+            let allValid = [];
+            let halves = this.findHalves(row, [], 2);
+            for(let i = 0; i < halves.length; i++){
+                allValid.push({config: halves[i].config, times: halves[i].times});
+            }
+           
             //console.log("All Valid: ");
             let bestLen = row.length; // want it to be small, its really the number of zeros in the given row
             let bestOnes = [];
@@ -607,6 +614,7 @@ class TileRows {
                         //console.log("Checking Row Makeability ");
                         let rowMakeable = this.rowsMakeable(noVerts);
                         if (rowMakeable.length > 0) {
+                            console.log(JSON.stringify(rowMakeable[0]));
                             let finalMoves = this.rowsToMoves(rowMakeable);
                             let mmm = this.movesToObjects(finalMoves);
                             return mmm;
@@ -805,6 +813,11 @@ class TileRows {
             // when times is greater than one, and times*config[i] >= next.config[i]*times
             if(current.config[i]*currTimes == next.config[i]*nextTimes || current.config[i]*currTimes == next.config[i] || current.config[i] == next.config[i]*nextTimes){
                 flag = true;
+            }
+            if(currTimes > 1){
+                if(current.config[i]*currTimes/2 == next.config[i]*nextTimes){
+                    flag = true;
+                }
             }
         }
         return !flag;

@@ -5,6 +5,8 @@ function GameManager(size, InputManager, Actuator, StorageManager, designer) {
   this.actuator       = new Actuator;
   this.gridCreated    = false;
   this.designer       = designer;
+  this.colorMappings  = [];
+  this.colorsActive         = false;
 
   this.startTiles     = designer === true ? 0 : 2;
 
@@ -135,10 +137,11 @@ const minus= document.getElementById("minus");
 
 
 plus.addEventListener('click', () => {
-  if (sizeInput.value < 15 ){
-    this.removeGridRows('grid-row', sizeInput.value);
-    sizeInput.value = parseInt(sizeInput.value) + 1;
-    this.size = sizeInput.value;
+  if (Number(sizeInput.innerHTML) < 15 ){
+    this.removeGridRows('grid-row', parseInt(sizeInput.innerHTML));
+    sizeInput.innerHTML = parseInt(sizeInput.innerHTML) + 1;
+    document.getElementById("sizeInput2").innerHTML = sizeInput.innerHTML;
+    this.size = parseInt(sizeInput.innerHTML);
     this.gridCreated = false;
     this.over = true;
 
@@ -153,10 +156,11 @@ plus.addEventListener('click', () => {
 });
 
 minus.addEventListener('click', () => {
-  if (sizeInput.value > 2 ){
-    this.removeGridRows('grid-row', sizeInput.value);
-    sizeInput.value = parseInt(sizeInput.value) - 1;
-    this.size = sizeInput.value;
+  if (parseInt(sizeInput.innerHTML) > 2 ){
+    this.removeGridRows('grid-row', parseInt(sizeInput.innerHTML));
+    sizeInput.innerHTML = parseInt(sizeInput.innerHTML) - 1;
+    document.getElementById("sizeInput2").innerHTML = sizeInput.innerHTML;
+    this.size = parseInt(sizeInput.innerHTML);
     this.gridCreated = false;
     this.over = true;
     
@@ -173,38 +177,89 @@ minus.addEventListener('click', () => {
 }
 
 GameManager.prototype.makeImage = function(colorMap, mapping, time){
-  let moveSets = this.tileRows.tileAssignments(colorMap);
-  if(moveSets.length > 0){
-    let index = 0;
-    for(const prop in mapping){ // set tile class colors correctly
-      let mappingNumbers = moveSets[0].mapping[index.toString()];
-      if(typeof(mappingNumbers) === "object"){
-        mappingNumbers.forEach((number) => {
-          this.actuator.changeTileClassColor(number, prop);
-        })
+  this.colorMappings = [];
+  document.getElementById("mappingTag").innerHTML = "";
+  let moveSetPromise = new Promise((resolve, reject) => {
+    let moveSets = this.tileRows.tileAssignments(colorMap);
+    resolve(moveSets);
+  })
+
+  moveSetPromise.then((moveSets) => {
+    document.getElementById("loadingDiv").style.display = "none";
+    document.getElementById("loader").style.display = "none";
+    if(moveSets.length > 0){
+      let index = 0;
+      for(const prop in mapping){ // set tile class colors correctly
+        let mappingNumbers = moveSets[0].mapping[index.toString()];
+        if(typeof(mappingNumbers) === "object"){
+          let map = [];
+          mappingNumbers.forEach((number) => {
+            map.push(number);
+            this.actuator.changeTileClassColor(number, prop);
+            this.colorMappings.push({tile: number, color: prop});
+          })
+          document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(map)}`;
+        }
+        else{
+          this.actuator.changeTileClassColor(mappingNumbers, prop);
+          document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(mappingNumbers)}`
+          this.colorMappings.push({tile: number, color: prop});
+        }
+        if(index < mapping.length - 1){
+          document.getElementById("mappingTag").innerHTML += `, `;
+        }
+        index = index + 1;
       }
-      else{
-        this.actuator.changeTileClassColor(mappingNumbers, prop);
-      }
-      index = index + 1;
-    }
-    this.makeImageMove(moveSets[0].moves, time, true);
-  }
-  else{
-    let colorMapTranspose = colorMap[0].map((_, colIndex) => colorMap.map(row => row[colIndex]));
-    let newColorMapTranspose = Array(colorMapTranspose.length);
-    for(let i = 0; i < colorMapTranspose.length; i++){
-      newColorMapTranspose[i] = colorMapTranspose[colorMapTranspose.length - 1 - i];
-    }
-    console.log("attempting with columns" + JSON.stringify(newColorMapTranspose))
-    let colMoveSet = this.tileRows.tileAssignments(newColorMapTranspose);
-    if(colMoveSet.length > 0){
-      this.makeImageMove(colMoveSet[0].moves, time, false);
+      this.colorsActive = true;
+      console.log(JSON.stringify(moveSets[0]))
+      this.makeImageMove(moveSets[0].moves, time, true);
     }
     else{
-      console.log("cannot be made at this time")
+      let colorMapTranspose = colorMap[0].map((_, colIndex) => colorMap.map(row => row[colIndex]));
+      let newColorMapTranspose = Array(colorMapTranspose.length);
+      for(let i = 0; i < colorMapTranspose.length; i++){
+        newColorMapTranspose[i] = colorMapTranspose[colorMapTranspose.length - 1 - i];
+      }
+      console.log("attempting with columns" + JSON.stringify(newColorMapTranspose))
+      let colMoveSet = this.tileRows.tileAssignments(newColorMapTranspose);
+      if(colMoveSet.length > 0){
+        let index = 0;
+        for(const prop in mapping){ // set tile class colors correctly
+          let mappingNumbers = colMoveSet[0].mapping[index.toString()];
+          if(typeof(mappingNumbers) === "object"){
+            let map = [];
+            mappingNumbers.forEach((number) => {
+              map.push(number);
+              this.actuator.changeTileClassColor(number, prop);
+              this.colorMappings.push({tile: number, color: prop});
+            })
+            document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(map)}`;
+          }
+          else{
+            this.actuator.changeTileClassColor(mappingNumbers, prop);
+            document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(mappingNumbers)}`
+            this.colorMappings.push({tile: number, color: prop});
+          }
+          if(index < mapping.length - 1){
+            document.getElementById("mappingTag").innerHTML += `, `;
+          }
+          index = index + 1;
+        }
+        this.colorsActive = true;
+        console.log(JSON.stringify(colMoveSet[0]))
+        this.makeImageMove(colMoveSet[0].moves, time, false);
+      }
+      else{
+        console.log("cannot be made at this time");
+        document.getElementById("mappingTag").innerHTML = "Image cannot be made at this time";
+      }
     }
-  }
+  }).catch((error) => {
+    console.error("error is happening" + error);
+  })
+
+  //let moveSets = this.tileRows.tileAssignments(colorMap);
+
 }
 
 GameManager.prototype.makeImageMove = function(moves, time, isRow){
@@ -301,7 +356,7 @@ GameManager.prototype.setup = function () {
     this.moves = [];
     this.tileInsert = "random"
     this.tileValue = 0;
-    //this.tileRows = new TileRows();
+    this.tileRows = new TileRows();
 
   // Add the initial tiles
   if(!this.designer){
@@ -315,6 +370,8 @@ GameManager.prototype.setup = function () {
 
   //Set the position classes
   this.actuator.setPositionClasses(this.grid);
+
+  document.getElementById("mappingTag").innerHTML = "";
 
   // Update the actuator
   this.actuate();

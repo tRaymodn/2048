@@ -20,6 +20,17 @@
   <div class="container">
     <div class="heading">
       <h1 class="title">2048</h1>
+      <span style="float: left; margin-top: 6%; margin-left: 5%;">Board Size: </span>
+      <div id="sizeInputContainer">
+        <button class="upBtn" id="plus">+</button>
+        <div>
+          <span class="inputSize" id="sizeInput">4</span>
+          <span class="notInputSize">X</span>
+          <span class="inputSize" id="sizeInput2">4</span>
+        </div>
+        <!--<input type="number" id="sizeInput" value="4" readonly> -->
+        <button class="downBtn" id="minus">-</button>
+      </div>
       <div class="scores-container">
         <div class="score-container">0</div>
         <div class="best-container">0</div>
@@ -27,34 +38,27 @@
     </div>
 
     <div class="above-game">
-      <button id="autoMove">AutoMove</button>
-      <button id="singleMove">Move</button>
-      <button id="simulate"> Simulate</button>
+      <div id="moveButtons">
+        <button id="autoMove">AutoMove</button>
+        <button id="singleMove">Move</button>
+        <button id="simulate"> Simulate</button>
+      </div>
+      <!--
       <input id="inputType" placeholder="Tile Insert Style">
       <button id="submitInputType">Submit</button>
       <input id="inputValue" placeholder="Inserted Tile Value">
-      <button id="submitValue">Value</button>
+      <button id="submitValue">Value</button> -->
       <div class="input-group">
-        <label for="sizeInput">Size: </label> 
-        <button class="btn" id="minus">-</button>
-        <input type="number" id="sizeInput" value="4" readonly>
-        <button class="btn" id="plus">+</button>
         <label for="speedInput">Speed: </label>
-        <button class="btn" id= "speedP">+</button>
+        <button class="btn1" id= "speedP">+</button>
         <input type = "number" id="speedInput" value = "5" readonly>
-        <button class="btn" id= "speedM">-</button>
+        <button class="btn1" id= "speedM">-</button>
       </div>
-      <button id="designerButton">Designer</button>
-      <button id="makeImageButton">Make Image</button>
       <p class="game-intro">Join the numbers and get to the <strong>2048 tile!</strong></p>
       <a class="restart-button">New Game</a>
+      
     </div>
 
-    <div id="colorPickerArea">
-            <div id="colorPicker">
-            </div>
-    </div>
-    
     <div class="game-container">
       
       <div class="game-message">
@@ -74,18 +78,59 @@
 
       </div>
     </div>
-
-    <p class="game-explanation">
-      <strong class="important">How to play:</strong> Use your <strong>arrow keys</strong> to move the tiles. When two tiles with the same number touch, they <strong>merge into one!</strong>
-    </p>
-    <hr>
-    <p>
-    <strong class="important">Note:</strong> This site is the official version of 2048. You can play it on your phone via <a href="http://git.io/2048">http://git.io/2048.</a> All other apps or sites are derivatives or fakes, and should be used with caution.
-    </p>
-    <hr>
-    <p>
-    Created by <a href="http://gabrielecirulli.com" target="_blank">Gabriele Cirulli.</a> Based on <a href="https://itunes.apple.com/us/app/1024!/id823499224" target="_blank">1024 by Veewo Studio</a> and conceptually similar to <a href="http://asherv.com/threes/" target="_blank">Threes by Asher Vollmer.</a>
-    </p>
+    
+    <div id="mappingDiv">
+      <p id="mappingTag"></p>
+    </div>
+    
+    <div id="designerDiv">
+      <div id="leftButtonsDiv">
+        <button id="designerButton">Open Designer</button>
+        <button id="makeImageButton">Make Image</button>
+      </div>
+      <div id="colorPickerArea">
+        <div id="colorPicker">
+        </div>
+      </div>
+        <div id="colorChangeDivContainer">
+          <div id="colorChangeDiv">
+          <div class="colorChoice" style="background-color: rgb(0, 0, 0)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(255, 0, 0)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(255, 165, 0)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(255, 255, 0)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(0, 255, 0)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(0, 0, 255)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(75, 0, 130)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(148, 0, 211)"> </div>
+          <div class="colorChoice" style ="background-color: rgb(255, 255, 255)"> </div>
+        </div>
+        <div id="currentColorDiv">
+          <span id="currentColorSpan">Current color: </span>
+          <div id="currentColor"></div>
+        </div>
+      </div>
+      
+      <div id="rightButtonsDiv">
+        <button id="colorPickerReset">Reset Colors</button>
+        <button id="toggleColorTiles">Toggle Colors On/Off</button>
+      </div>
+    </div>
+    <div id="loadingDiv">
+      <span style="float: left; margin-left: 10px;">Content Loading...</span>
+      <div id="loader">
+      </div>
+    </div>
+    <div id="footer">
+      <hr>
+      <p>
+      <strong class="important">Note:</strong> This site is a derivative of the original 2048 game and used to explore and expand upon the original game created by Gabriele Cirulli
+      </p>
+      <hr>
+      <p>
+      Created by <a href="http://gabrielecirulli.com" target="_blank">Gabriele Cirulli.</a> Based on <a href="https://itunes.apple.com/us/app/1024!/id823499224" target="_blank">1024 by Veewo Studio</a> and conceptually similar to <a href="http://asherv.com/threes/" target="_blank">Threes by Asher Vollmer.</a>
+      </p> 
+    </div>
+   
   </div>
 
   <script src="js/bind_polyfill.js"></script>
