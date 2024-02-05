@@ -34,6 +34,21 @@ GameManager.prototype.download = function (filename, text) {
   }
 }
 
+GameManager.prototype.downloadCSV = function (filename, text) {
+  var pom = document.createElement('a');
+  pom.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(text));
+  pom.setAttribute('download', filename);
+
+  if (document.createEvent) {
+      var event = document.createEvent('MouseEvents');
+      event.initEvent('click', true, true);
+      pom.dispatchEvent(event);
+  }
+  else {
+      pom.click();
+  }
+}
+
 GameManager.prototype.appendState = function(state, move){
   let newState = []
   for(let i = 0; i<Math.pow(this.size, 2); i++){
@@ -301,7 +316,7 @@ GameManager.prototype.setup = function () {
     this.moves = [];
     this.tileInsert = "random"
     this.tileValue = 0;
-    //this.tileRows = new TileRows();
+    this.tileRows = new TileRows();
 
   // Add the initial tiles
   if(!this.designer){
@@ -483,7 +498,15 @@ GameManager.prototype.move = function (direction) {
   // 0: up, 1: right, 2: down, 3: left
   var self = this;
 
-  if (this.isGameTerminated()) return; // Don't do anything if the game's over
+  
+  if (this.isGameTerminated()){
+    if(this.movesAvailable()){
+      this.actuator.continueGame();
+    }
+    else return 
+  }
+   
+  
 
   var cell, tile;
 
@@ -874,7 +897,7 @@ GameManager.prototype.cornerTileInsertHelper = function(tiles, x, y){
   }
 }
 /**
- * This function will take in a grid of cells and a move, represented by a number, (0-3), and return the resulting grid
+ * This function will take in a grid of cells and a move, represented by a number, (0-3), and return the resulting gridisGameTerminated
  * @param {Grid} grid // The state of the board before the move
  * @param {Number} move // The move to be executed on the given grid
  */
@@ -896,7 +919,15 @@ GameManager.prototype.getResultingPosition = function(grid, direction){
     // 0: up, 1: right, 2: down, 3: left
     var self = this;
 
-    if (this.isGameTerminated()) return; // Don't do anything if the game's over
+    if (this.isGameTerminated()){
+      if(this.movesAvailable()){
+        this.actuator.continueGame();
+      }
+      else return 
+    }
+     
+        
+    // Don't do anything if the game's over
   
     var cell, tile;
   

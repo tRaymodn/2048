@@ -72,8 +72,8 @@ speedInput.value = newSpeed;
 document.getElementById('singleMove').addEventListener("click", () => {
 
   
-  let move = scoreboard();
-  game.move(move);
+  let scr = scoreboard();
+  game.move(scr.m);
       
       //futureHendrix(2, game.grid)
       //console.log(JSON.stringify(futureList) + "length: " + futureList.length + "direction: " + move)
@@ -82,14 +82,14 @@ document.getElementById('singleMove').addEventListener("click", () => {
 })
 
 document.getElementById('simulate').addEventListener("click",() =>{
-  console.log(scorekeeper(100))
+  console.log(scorekeeper(250))
 })
 
 document.getElementById('autoMove').addEventListener("click", () => {
   if(!autoMoving){
     interval = setInterval(() => {
-      let move = scoreboard();
-      game.move(move);
+      let scr = scoreboard();
+      game.move(scr.m);
       let state = game.getBoardState();
       //console.log(state);
       dir++;
@@ -807,7 +807,8 @@ const bestToWorst = function(tile){
   }
 
 
-let scrNext = 0; 
+let scrLeft = 0; 
+let scrRight = 0;
 
 const points = function(game, grid, dir){
 
@@ -968,8 +969,8 @@ const points = function(game, grid, dir){
     }, 0);
 
 
-    let aScrCurr = sumCurr/ currScrs.length;
-    let aScrNext = sumNext/ nextScrs.length;
+    let aScrCurr = sumCurr / currScrs.length;
+    let aScrNext = sumNext / nextScrs.length;
 
     adjLoad = aScrNext - aScrCurr
   }
@@ -992,14 +993,13 @@ const points = function(game, grid, dir){
     //console.log("Next Chain", nextChain);
 
 
-    let fac = (nextSum - initSum) / (initCount +  nextCount); 
+    let fac = (nextSum - initSum ) / (nextCount + initCount); 
     let countDif =  nextCount - initCount ; 
 
     //console.log("FAC" , fac , "Dif" , countDif)
 
     // < --------------- need to prefer proper ordered chains over chains. (i.e [128, 64, 32, 16] VS. [128, 32, 8, 2]   )
 
-    // < ---------------- can we load adjacent tiles to chain in ascending order from chain 
 
 
 
@@ -1010,6 +1010,9 @@ const points = function(game, grid, dir){
   LOCKING ROW 
    // TODO:
     - verify mutiple Rows indexing (more than one row locked)
+
+    // TODO: Make SHIFT LOAD EXTEND TO ALL ROWS OF THE BOARD
+    
   
   */
 
@@ -1050,11 +1053,10 @@ const points = function(game, grid, dir){
       return accumulator + currentValue;
     }, 0);
 
-    scrNext = (sumLeft > sumRight) ? {sum: sumLeft , dir: 3} : {sum : sumRight, dir: 1 };
-    
+    scrLeft =  {sum: sumLeft , dir: 3}
+    scrRight = {sum : sumRight, dir: 1 }
   }
 
-  console.log(scrNext);
 
 
 
@@ -1069,8 +1071,8 @@ const points = function(game, grid, dir){
   }
 
   //SCORES 
-  mt =  nextMultiplier - currMultiplier;
-  lg =  nextVal - currVal;
+  mt =  nextMultiplier -currMultiplier;
+  lg =  nextVal -  currVal;
   ld = fac + countDif
   
 
@@ -1079,8 +1081,8 @@ const points = function(game, grid, dir){
   console.log("direction" , dir);
   //console.log("Scores", nextScr , currScr)
   console.log("Lg: ", lg , "Chain:" , nextScr - currScr ,"load", ld , "lock" ,lk , "mainchain:" ,  mt, "adjLoad" , adjLoad)
-  let eq =  lg + (nextScr - currScr) + ld +  mt  + adjLoad //+ lk //(maybe unimportant)
-      return eq;
+  let eq =  lg + (nextScr - currScr) + ld +  mt  + adjLoad// + lk //(maybe unimportant)
+      return {lg: lg , multip: (nextScr - currScr) , ld: ld , mt: mt  , adjLoad: adjLoad , lk: lk , eq: eq};
   }
 
 
@@ -1205,15 +1207,29 @@ const scoreboard = function(){
   let best = Number.NEGATIVE_INFINITY
   let move;
   let gamer = game
+  let Values = [];
 
   for (let i of moves){
+    Values = [];
     let result = gamer.getResultingPosition(gamer.grid, i);
-    let p = points(gamer, result.grid, i); //int
-    if(scrNext.dir == i){
-      p = p + scrNext.sum;
-      console.log(scrNext.sum)
-      console.log(p);
+    let POINTS = points(gamer, result.grid, i); //OBJECT
+    let p = POINTS.eq ;
+    Values.push(POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,0);
+
+
+    if(i == 3){
+      p = p + scrLeft.sum;
+      Values = [];
+      Values.push(POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,scrLeft.sum)
+
     }
+    if (i == 1){
+      p = p + scrRight.sum;
+      Values = [];
+      Values.push(POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,scrRight.sum)
+
+    }
+
     P.push(p)
   }
 
@@ -1226,12 +1242,13 @@ const scoreboard = function(){
       move =  moves[_]
     }
   } 
-  console.log("POINTS:" + P);
+  console.log("POINTS for Each Move:" + P);
+  console.log("Values:" + Values);
   console.log("MOVE : "+ move);
   console.log("\n")
-  return move;
+  return {m: move, p: Values};
 }
-
+// TODO: MAKE ADJLOAD CONTAIN THE ENTIRE BOARD WITH DESCENDING SCORES
 const loadAdj = function(grid, positions) {
   let posNotInChainOrNull = [];
   let values = [];
@@ -1288,15 +1305,18 @@ const loadAdj = function(grid, positions) {
   return values;
 }
 // TODO: - keeping track of date of fourBest to have metric of progress
+// TODO: - CSV Value
 
 const scorekeeper = function(iter) {
   let scores = [];
   let date = new Date();
   let sp = 100;
+  let values = [];
   for(let i = 0 ; i <= iter; i++){
     if (!game.isGameTerminated()) {
-      let move = scoreboard();
-      game.move(move);
+      let sc = scoreboard();
+      game.move(sc.m);
+      values.push(sc.p);
       i = i - 1
     } else{
       scores.push(fourBest());
@@ -1305,6 +1325,19 @@ const scorekeeper = function(iter) {
   }
   scores.unshift(getScoreMetrics(scores));
   scores.unshift(date);
+  scores.push(values);
+  let csv = [];
+  //POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,scrNext.sum
+  csv.push(["INDEX", "LG", "MTP", "LD", "MT", "ADJ","LK", "SHFT\n"].join())
+  
+
+  for (let val of values){
+    let aval = val.join();
+    csv.push(aval + "\n");
+  
+  }
+
+  game.download("PointValues.csv", csv)
   game.download("scores.txt", JSON.stringify(scores));
   return scores;
 };
@@ -1335,6 +1368,7 @@ let compare = largest[0].value;
 
 const getScoreMetrics = function(arr){
 let percentages = [];
+
 arr.shift();
 let cnt = 0;
 
@@ -1353,7 +1387,7 @@ for(let i = 0 ; i < compare.length; i++){
       cnt++
     }
     if (j == arr.length - 1){
-      percentages.push({val: `${compare[i]}`, cnt});
+      percentages.push({Value: `${compare[i]}`, Percent: cnt / arr.length});
       cnt = 0;
     }
   }
