@@ -8,31 +8,11 @@ let interval;
 let dir = 0;
 let autoMoving = false;
 let sp = 500;
-let currentColor = "rgb(255, 255, 255)";
 
-window.onload = function() {
-  let colorPickers = document.getElementsByClassName("colorChoice");
-  for(const square of colorPickers){
-    square.addEventListener("click", () =>{
-      currentColor = square.style.backgroundColor;
-      document.getElementById("currentColor").style.backgroundColor = currentColor;
-    })
-  }
-}
-
-document.getElementById('makeImageButton').addEventListener("click", async function(){
+document.getElementById('makeImageButton').addEventListener("click", () => {
   if(game.designer){
     let colorMap = makeColorBoardFromPicker();
-    let openLoad = new Promise((resolve, reject) => {
-      document.getElementById("loadingDiv").style.display = "block";
-      document.getElementById("loader").style.display = "block";
-      resolve(true);
-    })
-    openLoad.then(() =>{
-      setTimeout(() => {
-        game.makeImage(colorMap.map, colorMap.mapping, 200);
-      },20);
-    })
+    game.makeImage(colorMap.map, colorMap.mapping, 200);
   }
   
 })
@@ -59,23 +39,13 @@ document.getElementById('designerButton').addEventListener("click", () => {
     game.actuator.clearContainer(game.actuator.tileContainer);
     game.designer = !game.designer;
     makeImagePickerBoard(game.size);
-    document.getElementById("colorChangeDiv").style.display = "flex";
-    document.getElementById("currentColorDiv").style.display = "block";
-    document.getElementById("rightButtonsDiv").style.display = "flex";
-    document.getElementById("makeImageButton").style.display = "block";
     console.log(game.size);
     let zeros = Array(Number(game.grid.size)).fill(0);
     // Fill in configurations and configDecomps in tileRows
     game.tileRows.evaluateState(zeros, []);
     console.log(game.tileRows.getFilledConfigs());
-    document.getElementById("designerButton").innerHTML = "Close Designer";
   }
   else{
-    document.getElementById("colorChangeDiv").style.display = "none";
-    document.getElementById("currentColorDiv").style.display = "none";
-    document.getElementById("rightButtonsDiv").style.display = "none";
-    document.getElementById("makeImageButton").style.display = "none";
-    document.getElementById("designerButton").innerHTML = "Open Designer";
     game.actuator.clearContainer(document.getElementById("colorPicker"));
     game.designer = !game.designer;
     game.setup();
@@ -84,18 +54,7 @@ document.getElementById('designerButton').addEventListener("click", () => {
   //game.actuator.addTile({x: 0, y: 0, value: 2}, game.size);
 })
 
-document.getElementById("toggleColorTiles").addEventListener("click", () => {
-  if(game.colorsActive){
-    game.actuator.resetTileClassColors();
-    game.colorsActive = false;
-  }
-  else if(game.colorMappings.length > 0){
-    game.colorMappings.forEach((mapping) => {
-      game.actuator.changeTileClassColor(mapping.tile, mapping.color);
-    })
-    game.colorsActive = true;
-  }
-})
+
 
 
 document.getElementById('speedP').addEventListener("click", () => {
@@ -115,6 +74,14 @@ document.getElementById('singleMove').addEventListener("click", () => {
   
   let scr = scoreboard();
   game.move(scr.m);
+
+  //console.log("R" , isLockedRow(game.grid, 0))
+
+  //console.log("C", isLockedCol(game.grid, 0 ))
+
+  
+  
+
       
       //futureHendrix(2, game.grid)
       //console.log(JSON.stringify(futureList) + "length: " + futureList.length + "direction: " + move)
@@ -123,18 +90,24 @@ document.getElementById('singleMove').addEventListener("click", () => {
 })
 
 document.getElementById('simulate').addEventListener("click",() =>{
-  console.log(scorekeeper(250))
+  scorekeeper(1000)
 })
 
 document.getElementById('autoMove').addEventListener("click", () => {
   if(!autoMoving){
     interval = setInterval(() => {
+      if (!game.movesAvailable()){
+        clearInterval(interval)
+        autoMoving = false;
+      }else{
       let scr = scoreboard();
       game.move(scr.m);
       let state = game.getBoardState();
       //console.log(state);
-      dir++;
-    }, sp);
+      
+  }
+}, sp);
+  
     autoMoving = true;
   }
   else{
@@ -142,23 +115,13 @@ document.getElementById('autoMove').addEventListener("click", () => {
     autoMoving = false;
   }
 })
-/*
-document.getElementById('submitInputType').addEventListener("click", () => {
-  let type = document.getElementById("inputType").value
-  game.changeTileInsert(type);
-  document.getElementById('inputType').value = "";
+
+
+document.getElementsByClassName('heading')[0].addEventListener("click", ()=> {
+  makeCheckerboard();
 })
 
-document.getElementById("submitValue").addEventListener("click", () => {
-  let val = document.getElementById("inputValue").value
-  game.changeTileValue(val);
-  document.getElementById('inputValue').value = "";
-})
-*/
 
-document.getElementById("colorPickerReset").addEventListener("click", () => {
-  resetColorBoard();
-})
 
 const makeImagePickerBoard = function(size){
   for(let i = 0; i < size; i++){
@@ -179,7 +142,6 @@ const makeImagePickerBoard = function(size){
 const changePickerTileColor = function(htmlTile){
   let style = getComputedStyle(htmlTile).backgroundColor;
   let newColor;
-  /*
   switch(style){
     case 'rgb(0, 0, 0)':
       newColor = "rgb(255, 0, 0)";
@@ -212,17 +174,8 @@ const changePickerTileColor = function(htmlTile){
       newColor = "rgb(0, 0, 0)";
       break;
   }
-  */
-  newColor = currentColor;
   htmlTile.setAttribute("style", `background-color: ${newColor}`);
-  makeColorBoardFromPicker();
-}
-
-const resetColorBoard = function(){
-  let tiles = document.getElementsByClassName("colorTile");
-  for(let t of tiles){
-    t.style.backgroundColor = "rgb(0, 0, 0)";
-  }
+  makeColorBoardFromPicker()
 }
 
 const makeColorBoardFromPicker = function(){
@@ -640,12 +593,13 @@ const isBorder = function(x, y){
   return ((x == 0 || x == game.size  - 1) ||(y == 0 || y == game.size -1));
 }
 
-const isLockedRow = function(g, r){
+const isLockedRow = function(grid, r){
   let locked = true;
-  for(let i = 0; i < game.size; i++){
-    //console.log( i, r)
-    //console.log("OURCELL: " + g.cells[i][r].value)
-    if(g.cells[i][r] === null){
+  let row = getRow(grid, r);
+  for(let i = 0; i < row.length - 1; i++){
+    //console.log( i, row)
+    //console.log("OURCELL: " + row[i])
+    if(row[i] == null || row[i + 1] == null || row[i+1].value == row[i].value ){
       locked = false;
       break;
     }
@@ -653,10 +607,11 @@ const isLockedRow = function(g, r){
 return locked;
 }
 
-const isLockedCol = function(c, tiles){
+const isLockedCol = function(grid,c){
   let locked = true;
-  for(let i = 0; i < game.size; i++){
-    if(g.cells[i][col] === null){
+  let col = getCol(grid, c);
+  for(let i = 0; i < col.length - 1; i++){
+    if(col[i] == null || col[i + 1] == null || col[i + 1].value == col[i].value ){
       locked = false;
       break;
     }
@@ -668,6 +623,14 @@ const getRow = function (g, r){
   let arr = []
   for (let i = 0; i < g.size; i++){
       arr.push(g.cells[i][r])
+    }
+  return arr;
+}
+
+const getCol = function (g, c){
+  let arr = []
+  for (let i = 0; i < g.size; i++){
+      arr.push(g.cells[c][i])
     }
   return arr;
 }
@@ -689,6 +652,30 @@ const countRow = function(r){
     }
   }
     return cnt;
+  }
+
+  const getConsScr = function (arr){
+    let scores = [];
+    for(let i = 0; i < arr.length; i++){
+      if (arr[i] == null || arr[i + 1] == null){
+        continue;
+      } else if (arr[i].value == arr[i+1].value){
+        let cnt = 2;
+        let temp = i + 1
+        while(true){
+          if (temp < arr.length - 1 && arr[temp + 1] != null && arr[temp].value == arr[temp + 1].value){
+            cnt++;
+            temp++;
+          } else{
+            scores.push(arr[i + 1].value * (cnt - i))
+            break;
+          }
+        }
+      }
+    }
+    return scores.reduce((accumulator, currentValue) => {
+      return accumulator + currentValue;
+    }, 0); 
   }
 
   const countRowCons = function(r){
@@ -866,10 +853,12 @@ const points = function(game, grid, dir){
 
   let lg = 0; // largest in corner
   let ld = 0; // loading tiles
-  let lk = 0; // locking row
-  let mt = 0; // maintain stucture
+  //let lk = 0; // locking row
+  //let mt = 0; // maintain stucture
   let nextRowI;
   let currRowI;
+  let nextColI;
+  let currColI;
   let nextMultiplier = 1;
   let currMultiplier = 1; 
   let nextChain;
@@ -879,6 +868,7 @@ const points = function(game, grid, dir){
   let currVal = 0;
   let nextVal = 0;
   let adjLoad = 0;
+  let shiftLoad = 0;
 
 
 
@@ -888,32 +878,33 @@ const points = function(game, grid, dir){
 
   // Get position of the max tile in the current grid if any are in the corner, save the row, otherwise our row is the first entry in the largest tiles array 
   let currPos = game.grid.getMaxPos()
+  currRowI = currPos[0].y;
+  currColI = currPos[0].x;
   for (let g of currPos){
+    currVal = g.value/1.5;  // TODO:
     if (isCorner(g.x, g.y)){
       currVal = g.value
       currRowI = g.y 
+      currColI = g.x
       break;
     }
-  }
-  if (!currRowI){
-    currRowI = currPos[0].y;
   }
   
 
   // get position of the largest tile in the next grid, if so save the value and the row , otherwise the value is zero and we use the first entry in the largest tiles array
   let nextPos = grid.getMaxPos()
+  nextRowI = nextPos[0].y
+  nextColI = nextPos[0].x;
   for (let p of nextPos){
+    nextVal = p.value/1.5// TODO:
     if (isCorner(p.x, p.y)){
       nextVal = p.value
       nextRowI = p.y;
+      nextColI = p.x
       break;
     }
   }
-  if(!nextRowI){
-    nextRowI = nextPos[0].y
-  }
 
-  
 
   /*
   CHAINING
@@ -946,18 +937,14 @@ const points = function(game, grid, dir){
 
    nextMultiplier = obj.m // length
    nextChain = obj.arr // tiles
-   nextScr = obj.scr // sum - length
+   nextScr = obj.scr // sum - length TODO:
  
  // obtain chain metrics for comparison later 
    let p = assessChain(game.grid, currRow, currRowI, i, currRR );
  
    currMultiplier = p.m; // length
    currChain = p.arr; // tiles
-   currScr = p.scr; // sum - length
-
-  // want to preface edge if not corner for most space with chain < --------------------------------------
-
-  // CHAIN DOESNT HAVE TO BE IDEAL CHAIN ALL THE TIME < ----------------------------------- 
+   currScr = p.scr; // sum - length TODO:
 
 
  /*
@@ -987,44 +974,51 @@ const points = function(game, grid, dir){
       nextPositions.push(pos);
     }
 
-    //console.log("curr positions" , currPositions)
-    //console.log("next positions" , nextPositions)
-
-    let adjCurr = loadAdj(game.grid, currPositions)
+    //let adjCurr = loadAdj(game.grid, currPositions)
     let adjNext = loadAdj(grid, nextPositions)
+    
+
+    //want to create a method that will run until all tiles that are adjacent to other tiles havea score 
+    // always have to move so look at next adj and calcualte score of adj tiles 
+    let desAdj = [];
+
+    while (nextPositions.length < getOccupiedResults(grid, dir).tiles.length && adjNext.length > 0 ){
+      adjNext = new Set(loadAdj(grid, nextPositions))
+      adjNext = [...adjNext]
+      for (let tile of adjNext){
+        let pos = {x: tile.x , y: tile.y}
+        nextPositions.push(pos);
+      }
+      desAdj.push(adjNext.map(item => item.value));
+
+    }
+    //console.log("next positions" , nextPositions)
+    //console.log("adj next" ,  adjNext);
+    //console.log(nextPositions.length)
+    //console.log(getOccupiedResults(grid, dir).tiles.length)
+    //console.log(dir)
+    //console.log("next positions" , nextPositions)
+    //console.log("desAdj" , desAdj)
 
     //console.log("adj curr" , adjCurr);
     //console.log("adj next" ,  adjNext);
 
-    let currScrs = [];
     let nextScrs = [];
     
-    if(adjCurr.length > 0 && adjNext.length > 0){
-    for( i = 0; i < adjCurr.length; i++){
-      let scr = adjCurr[i].value * (adjCurr.length - i) / adjCurr.length;
-      currScrs.push(scr);
+    if(desAdj.length > 0){
+    for( i = 0; i < desAdj.length; i++){
+      const sumNext = desAdj[i].reduce((accumulator, currentValue) => {
+        return accumulator + currentValue;
+      }, 0);
+
+
+      nextScrs.push(sumNext * ((desAdj.length - i) / desAdj.length) / (nextVal / 2)); // TODO:
+
     }
 
-    
-    for( j = 0; j < adjNext.length; j++){
-      let scr = adjNext[j].value * (adjNext.length - j) / adjNext.length;
-      nextScrs.push(scr);
-    }
-
-
-    const sumNext = nextScrs.reduce((accumulator, currentValue) => {
+    adjLoad = nextScrs.reduce((accumulator, currentValue) => {
       return accumulator + currentValue;
     }, 0);
-
-    const sumCurr = currScrs.reduce((accumulator, currentValue) => {
-      return accumulator + currentValue;
-    }, 0);
-
-
-    let aScrCurr = sumCurr / currScrs.length;
-    let aScrNext = sumNext / nextScrs.length;
-
-    adjLoad = aScrNext - aScrCurr
   }
 
 
@@ -1045,7 +1039,7 @@ const points = function(game, grid, dir){
     //console.log("Next Chain", nextChain);
 
 
-    let fac = (nextSum - initSum ) / (nextCount + initCount); 
+    let fac = nextSum - initSum ; 
     let countDif =  nextCount - initCount ; 
 
     //console.log("FAC" , fac , "Dif" , countDif)
@@ -1065,51 +1059,78 @@ const points = function(game, grid, dir){
 
     // TODO: Make SHIFT LOAD EXTEND TO ALL ROWS OF THE BOARD
     
-  
+
+    want to look at a grids next positions
+      sum the values that are the same after left and right moves in consecutive rows and sum their scores by closest to start
+      sum the values that are the same after and up and down moves in consecutive columns and sum scoores byb closest to start 
+      could start at any index most likely 0 or grid.size 
+
+      foor every move i want to 
+
+
+      If Horizontally locked
+      move a direction say left 
+      -> get start row and next row 
+      -> go through every column
+      -> if values in col arr [x][][][]    x match y ? multiply value of matching tiles by grid.size - 1 - i  / (grid.size - 1)
+                              [y][][][]    sum all column values
+                              [z][][][]
+                              [q][][][]
+      
+
+     if vertically  locked
+      move a direction say down
+      -> go through every row
+      -> if values in row arr [x][y][z][q]    x match y ? multiply value of matching tiles by grid.size - 1 - i  / (grid.size - 1)
+                              [][][][]    sum all row values
+                              [][][][]
+                              [][][][]
+      
+
   */
 
  
 
   let lockedCurr = isLockedRow(game.grid, currRowI);
   let lockedNext = isLockedRow(grid, nextRowI);
-  let rIc = 0;
-  let rIn = 0;
 
-
-  if(nextRowI == 0  ){
-    rIn = nextRowI + 1;
-    //nextOnce = true;
-  }else if (nextRowI == grid.size - 1){
-    rIn = nextRowI - 1;
-    //nextOnce = true; 
+  let shiftScores = []
+  //ROW SLIDE Check columns
+  if (dir == 1 || dir == 3 ){
+    
+    //determine direction to check 
+    if( nextColI < grid.size / 2  ){
+      for(let i = nextColI; i < grid.size - 1; i ++ ){
+        let col = getCol(grid, i) ;
+        shiftScores.push(getConsScr(col) * (grid.size - 1 - i) / (grid.size - 1) / nextVal) ; // TODO: 
+      } 
+    }else{
+      for(let i = nextColI; i > 0; i-- ){
+          let col = getCol(grid, i) ;
+          shiftScores.push(getConsScr(col) * (grid.size - 1 - i) / (grid.size - 1) / nextVal);
+      } 
+    }
+  }else {
+    if( nextRowI < grid.size / 2  ){
+      for(let i = nextRowI; i < grid.size - 1; i ++ ){
+        let row = getRow(grid, i) ;
+        shiftScores.push(getConsScr(row)* (grid.size - 1 - i) / (grid.size - 1) / nextVal);
+      } 
+    }else{
+      for(let i = nextRowI; i > 0; i-- ){
+          let row = getRow(grid, i) ;
+          shiftScores.push(getConsScr(row)* (grid.size - 1 - i) / (grid.size - 1) / nextVal );
+      } 
+    }
   }
+  //console.log(shiftScores , dir);
 
-
-  if (!isLockedRow(grid, rIn)){
-
-    let leftSlide = game.getResultingPosition(game.grid, 3);
-    let rightSlide = game.getResultingPosition(game.grid, 1);
-
-    let leftSlideRow = getRow(leftSlide.grid, rIn);
-    let rightSlideRow = getRow(rightSlide.grid, rIn);
-
-    let slideScoreLeft = getLikes(nextRow, leftSlideRow);
-    let slideScoreRight = getLikes(nextRow, rightSlideRow);
-
-
-    const sumLeft = slideScoreLeft.reduce((accumulator, currentValue) => {
+    shiftLoad = shiftScores.reduce((accumulator, currentValue) => {
       return accumulator + currentValue;
     }, 0);
 
-    const sumRight = slideScoreRight.reduce((accumulator, currentValue) => {
-      return accumulator + currentValue;
-    }, 0);
 
-    scrLeft =  {sum: sumLeft , dir: 3}
-    scrRight = {sum : sumRight, dir: 1 }
-  }
-
-
+    
 
 
   if(lockedCurr && !lockedNext || !lockedCurr && !lockedNext){
@@ -1121,20 +1142,22 @@ const points = function(game, grid, dir){
   if (!lockedCurr && lockedNext){
     lk = 2;
   }
+  
 
   //SCORES 
-  mt =  nextMultiplier -currMultiplier;
-  lg =  nextVal -  currVal;
+  mt =  nextMultiplier - currMultiplier;
+  lg =  nextVal;
   ld = fac + countDif
   
 
   //console.log("Largest In Corner:" , lg , "Chain Structure", des, "\n" );
   //console.log("Chain Multiplier" , multiplier, "LOCK" , lk, "LOAD" ,ld, "Mainchain", mt , '\n');
-  console.log("direction" , dir);
+  //console.log("direction" , dir);
   //console.log("Scores", nextScr , currScr)
-  console.log("Lg: ", lg , "Chain:" , nextScr - currScr ,"load", ld , "lock" ,lk , "mainchain:" ,  mt, "adjLoad" , adjLoad)
-  let eq =  lg + (nextScr - currScr) + ld +  mt  + adjLoad// + lk //(maybe unimportant)
-      return {lg: lg , multip: (nextScr - currScr) , ld: ld , mt: mt  , adjLoad: adjLoad , lk: lk , eq: eq};
+  //console.log("Lg: ", lg , "Chain:" , nextScr - currScr ,"load", ld , "lock" ,lk , "mainchain:" ,  mt, "adjLoad" , adjLoad, "Shift" ,shiftLoad)
+  let eq =  lg + nextScr  + adjLoad  + shiftLoad //+ ld + lk +  mt //(maybe unimportant)
+  //console.log(eq);
+  return {lg: lg , multip: nextScr ,  adjLoad: adjLoad  , shiftLoad: shiftLoad , eq: eq};
   }
 
 
@@ -1214,18 +1237,13 @@ const assessChain = function(grid, r, rIndex, startIndex,  rr){
     }
 
   }
-  if (multiplier != 1){
-    des = 1;
-  } else{
-    des = 0;
-  }
 
   let Sum = rowValue(arr);
   let Count = countRow(arr);
 
   let scr = Sum - Count
 
-  return {des: des, m: multiplier , arr: arr, scr: scr};
+  return {m: multiplier , arr: arr, scr: scr};
 }
 
 
@@ -1262,45 +1280,37 @@ const scoreboard = function(){
   let Values = [];
 
   for (let i of moves){
-    Values = [];
+    //Values = [];
     let result = gamer.getResultingPosition(gamer.grid, i);
     let POINTS = points(gamer, result.grid, i); //OBJECT
     let p = POINTS.eq ;
-    Values.push(POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,0);
-
-
-    if(i == 3){
-      p = p + scrLeft.sum;
-      Values = [];
-      Values.push(POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,scrLeft.sum)
-
-    }
-    if (i == 1){
-      p = p + scrRight.sum;
-      Values = [];
-      Values.push(POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,scrRight.sum)
-
-    }
+    Values.push([POINTS.lg,POINTS.multip,POINTS.adjLoad,POINTS.shiftLoad, p])
 
     P.push(p)
   }
+  //console.log(Values);
 
   // right now the values might be the same for the score, in which we will prefer left. 
   //eventually moves will very very rarely have the same value.
-  console.log("MOVES: " + moves)
+  let finVals = []
+  //console.log("MOVES: " + moves)
   for (let _ = 0; _ < P.length; _++){
     if ( P[_] >= best){
       best = P[_]
       move =  moves[_]
+      finVals = Values[_];
     }
   } 
-  console.log("POINTS for Each Move:" + P);
-  console.log("Values:" + Values);
-  console.log("MOVE : "+ move);
-  console.log("\n")
-  return {m: move, p: Values};
+  
+
+  //console.log("POINTS for Each Move:" + P);
+  //console.log("Values:" + finVals);
+  //console.log("MOVE : "+ move);
+  //console.log("\n")
+  return {m: move, p: finVals};
 }
-// TODO: MAKE ADJLOAD CONTAIN THE ENTIRE BOARD WITH DESCENDING SCORES
+
+
 const loadAdj = function(grid, positions) {
   let posNotInChainOrNull = [];
   let values = [];
@@ -1356,8 +1366,7 @@ const loadAdj = function(grid, positions) {
   }
   return values;
 }
-// TODO: - keeping track of date of fourBest to have metric of progress
-// TODO: - CSV Value
+
 
 const scorekeeper = function(iter) {
   let scores = [];
@@ -1377,10 +1386,10 @@ const scorekeeper = function(iter) {
   }
   scores.unshift(getScoreMetrics(scores));
   scores.unshift(date);
-  scores.push(values);
+  //scores.push(values);
   let csv = [];
   //POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,scrNext.sum
-  csv.push(["INDEX", "LG", "MTP", "LD", "MT", "ADJ","LK", "SHFT\n"].join())
+/* csv.push(["INDEX", "LG", "MTP", "ADJ", "SHFT", "SUM\n"].join())
   
 
   for (let val of values){
@@ -1388,9 +1397,9 @@ const scorekeeper = function(iter) {
     csv.push(aval + "\n");
   
   }
-
-  game.download("PointValues.csv", csv)
-  game.download("scores.txt", JSON.stringify(scores));
+*/
+  //game.download("Data.csv", csv)
+  game.download("Results.txt", JSON.stringify(scores));
   return scores;
 };
 
