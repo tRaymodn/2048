@@ -228,6 +228,7 @@ GameManager.prototype.makeImage = function(colorMap, mapping, time){
       this.colorsActive = true;
       console.log(JSON.stringify(moveSets[0]))
       this.makeImageMove(moveSets[0].moves, time, true);
+      return true;
     }
     else{
       let colorMapTranspose = colorMap[0].map((_, colIndex) => colorMap.map(row => row[colIndex]));
@@ -263,14 +264,16 @@ GameManager.prototype.makeImage = function(colorMap, mapping, time){
         this.colorsActive = true;
         console.log(JSON.stringify(colMoveSet[0]))
         this.makeImageMove(colMoveSet[0].moves, time, false);
+        return true;
       }
       else{
         console.log("cannot be made at this time");
         document.getElementById("mappingTag").innerHTML = "Image cannot be made at this time";
+        return false;
       }
     }
   }).catch((error) => {
-    console.error("error is happening" + error);
+    console.error("error is happening" + error.message + error.name + error.stack);
   })
 
   //let moveSets = this.tileRows.tileAssignments(colorMap);
@@ -647,7 +650,7 @@ GameManager.prototype.move = function (direction) {
       default:
         this.addRandomTile(this.tileValue);
     }
-    if (!this.movesAvailable()) {
+    if (!this.movesAvailable() && !this.designer) { // stops the "Game Over" from displaying when in designer mode and there are no more moves
       //this.download("moves.txt", this.movesToString())
       //this.download("states.txt", this.statesToString())
       this.over = true; // Game over!

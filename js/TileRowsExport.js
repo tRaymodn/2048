@@ -1,10 +1,8 @@
 class TileRows {
     constructor() {
-        this.configurations = [];
-        this.configDecomps = [];
+        this.nnconfigurations = new Map()
         this.nonReversibleConfigs = [];
-        this.filledConfigs = [];
-        this.filledDecomps = [];
+        this.nnFilledDecomps = new Map();
     }
     // ChatGPT
     arraysAreEqual(array1, array2) {
@@ -82,7 +80,7 @@ class TileRows {
                     }
                     else { // if neither of the previous two cases run, set newArray equal to arr so that no extra stuff happens
                         newArray = arr;
-                        //console.log("No left or right moves" + newArray); // this is a problem
+                        console.log("No left or right moves" + newArray); // this is a problem
                     }
                     //console.log("newArray after shifting" + newArray);
                     let emptyArray = [arr.length];
@@ -93,6 +91,15 @@ class TileRows {
                         //console.log("Arrays Changed!");
                         // Set tile value
                         let value = (k == 0) ? 2 : 4;
+                        let zeros = 0;
+                        for(let num of newArray){
+                            if(num === 0){
+                                zeros = zeros + 1;
+                            }
+                        }
+                        if(zeros === 1){ // when placing on the left and right is the same thing, do not go through the j loop again
+                            j = 1;
+                        }
                         // now we should have the array situated mostly correctly depending on the move (barring merges)
                         if (j == 0) { // tile placed on the right
                             //console.log("Place " + value + " Right");
@@ -113,28 +120,21 @@ class TileRows {
                         }
                         //console.log("Array after tile placement: " + newArray);
                         let end = true;
-                        for (let u = 0; u < newArray.length - 1; u++) {
-                            if ((newArray[u] == 0 || newArray[u + 1] == 0) || newArray[u] == newArray[u + 1]) { // if there are any empty spaces or like tiles adjacent, it is not the end
-                                end = false;
-                                break;
-                            }
+                        if(newArray[newArray.length-1] === 0){
+                            end = false;
+                        }
+                        else{
+                            for (let u = 0; u < newArray.length - 1; u++) {
+                                if (newArray[u] == 0 || newArray[u] == newArray[u + 1]) { // if there are any empty spaces or like tiles adjacent, it is not the end
+                                    end = false;
+                                    break;
+                                }
+                            }  
                         }
                         // TODO can definetly clean this up and get rid of some of the redundancy \/ \/ \/ \/ \/ \/
                         if (!end) { // the resulting move is not the end and needs to be investigated further
                             if (this.inConfiguration(newArray) == -1) { // if current state is not in configs already
-                                this.configurations.push(newArray);
                                 //console.log("Added " + newArray);
-                                
-                                let nonReversible = true;
-                                for (let g = 0; g < Math.floor(newArray.length / 2); g++) {
-                                    if (newArray[g] != newArray[newArray.length - 1 - g]) {
-                                        nonReversible = false;
-                                        break;
-                                    }
-                                }
-                                if (nonReversible) {
-                                    this.nonReversibleConfigs.push(newArray);
-                                }
                                 
                                 let moves = [...prevList]; // copy prevList
                                 let m = i;
@@ -146,32 +146,18 @@ class TileRows {
                                 }
                                 let move = `${m}${k}${j}`; //construct string
                                 moves.push(move); //add new move string to prevList
-                                let currentMoves = Array(moves.length);
-                                for (let r = 0; r < moves.length; r++) currentMoves[r] = moves[r]; // fill currentMoves
-                                this.configDecomps.push(currentMoves);
-                                console.log("Decomp move: " + move);
+                                this.nnconfigurations.set(JSON.stringify(newArray), moves);
+                                //console.log("Decomp move: " + move);
 
                                 this.evaluateState(newArray, moves); // this is the only thing that is different I think
                             }
                             else {
-                                //console.log(" Already in configs");
+                                //console.log(" Already in configs" + newArray);
                             }
                         } else { // the resulting move is a final state, need to check if it's already in the list
                             //console.log("No more moves");
                             if (this.inConfiguration(newArray) == -1) {
-                                this.configurations.push(newArray);
-                                this.filledConfigs.push(newArray);
                                 //console.log(" Added " + newArray + " no more");
-                                let nonReversible = true;
-                                for (let g = 0; g < Math.floor(newArray.length / 2); g++) {
-                                    if (newArray[g] != newArray[newArray.length - 1 - g]) {
-                                        nonReversible = false;
-                                        break;
-                                    }
-                                }
-                                if (nonReversible) {
-                                    this.nonReversibleConfigs.push(newArray);
-                                }
 
                                 let moves = [...prevList]; // copy prevList
                                 let m = i;
@@ -185,8 +171,8 @@ class TileRows {
                                 moves.push(move); //add new move string to prevList
                                 let currentMoves = Array(moves.length);
                                 for (let r = 0; r < moves.length; r++) currentMoves[r] = moves[r]; // fill currentMoves
-                                this.configDecomps.push(currentMoves);
-                                this.filledDecomps.push(currentMoves);
+                                this.nnFilledDecomps.set(JSON.stringify(newArray), moves);
+                                this.nnconfigurations.set(JSON.stringify(newArray), moves);
                                 //console.log("Decomp move: " + move + " no more");
                             }
                         }
@@ -203,59 +189,24 @@ class TileRows {
                 }
             }
         }
-        console.log(arr + " is finished, config size: " + this.configurations.length);
+        //console.log(arr + " is finished, config size: " + this.configurations.length);
     }
     inConfiguration(arr) {
-        for (let i = 0; i < this.configurations.length; i++) {
-            let matches = 0;
-            for (let j = 0; j < arr.length; j++) {
-                if (arr[j] == this.configurations[i][j]) {
-                    matches++;
-                }
-            }
-            if (matches == arr.length) {
-                return i;
-            }
-        }
-        return -1;
+       if(this.nnconfigurations.get(JSON.stringify(arr)) === undefined){
+            return -1;
+       }
+       else{
+            return 1;
+       }
     }
     inFilledConfigs(arr) {
-        for(let i = 0; i < this.filledConfigs.length; i++){
-            if(this.arraysAreEqual(arr, this.filledConfigs[i])){
-                return i;
-            }
-        }
-        return -1;
-    }
-    getFilledConfigs() {
-        let filled = [];
-        for (const configuration of this.configurations) {
-            let flag = false;
-            for (let j = 0; j < configuration.length - 1; j++) {
-                if (configuration[j] == 0 || configuration[j + 1] == 0 || configuration[j] == configuration[j + 1]) {
-                    flag = true;
-                    break;
-                }
-            }
-            if (!flag) {
-                filled.push(configuration);
-            }
-        }
-        return filled;
-    }
-    findMerge(arr, numbers) {
-        if (numbers.length > 4 || numbers.length == 0) { // catch incorrect number of args
+       let dcmp = this.nnFilledDecomps.get(JSON.stringify(arr));
+       if(dcmp !== undefined){
+            return dcmp;
+       }
+       else{
             return -1;
-        }
-        let match = [arr.length];
-        for (let p = 0; p < match.length; p++) {
-            match[p] = 0;
-
-        }
-        for (const pos of numbers) { // set the match array to be equal to the values we want to merge (same as the ones in the original array)
-            match[pos] = arr[pos];
-        }
-        return this.inConfiguration(match);
+       }
     }
     //TODO can simplify this !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     findHalves(row, halvesSoFar, times) {
@@ -272,7 +223,7 @@ class TileRows {
         }
         let ind = this.inConfiguration(r);
         if (ind != -1 && !flag) {
-            halvesSoFar.push({ config: this.configurations[ind], times: times });
+            halvesSoFar.push({ config: r, times: times });
         }
         if (!flag) {
             return this.findHalves(r, halvesSoFar, times * 2);
@@ -281,139 +232,53 @@ class TileRows {
             return halvesSoFar;
         }
     }
+    
+    findRealHalves(row) {
+        let times = 2;
+        let currRow = row;
+        let totalHalves = [];
+        let smallest = Math.min(...row);
+        for(let i = 0; i < Math.log2(smallest)-1; i++){ // [8,16,32,4] --> smallest = 4  log2(4) - 1 = 1. Can be divided 1 time
+            let flag = false;
+            for(let j = 0; j < row.length; j++){
+                currRow[j] = currRow[j]/2;
+                if(currRow[j] < 2){
+                    flag = true;
+                    break;
+                }
+            }
+            if(this.inFilledConfigs(currRow) != -1 && !flag){
+                let r = [...currRow];
+                totalHalves.push({config: r, times: times});
+            }
+            times = times * 2;
+        }
+        return totalHalves;
+        
+    }
     makeRow(row) {
-        let ind = this.inFilledConfigs(row);
+        let dcm = this.inFilledConfigs(row);
         let list = []; // dont know what this is
         let size = 0;
-        if (ind != -1) { // if the given row is one that can be made in a single row, then just return that
-            list.push(this.filledDecomps[ind]);
-            //console.log(`${row} is in configs`);
+        if (dcm != -1) { // if the given row is one that can be made in a single row, then just return that
             return { list: [{ config: row, times: 1 }], len: 0 };
         }
         else { // needed row is not one that can be created using a single row,
-            // I think it would be beneficial to build from the middle out, because it is much easier to make the tiles that we want on the edges of the board
-            let closest = Array(this.configurations[0].length).fill(0);
-            for (const config of this.configurations) {
-                let matches = 0;
-                for (let i = 0; i < config.length; i++) {
-                    if (config[i] <= row[i] && config[i] >= closest[i] && config[i] != 0) {
-                        matches++;
-                    }
-                }
-                let oop = false; // this for loop makes it so that all positions of the chosen array will not be greater than any more positions than that position is greater than in row.
-                for (let j = 0; j < config.length; j++) {
-                    for (let k = 0; k < config.length; k++) {
-                        if (row[j] > row[k] && config[j] <= config[k] && j != k) {
-                            oop = true;
-                        }
-                    }
-                }
-                if (matches == closest.length && !oop) {
-                    closest = config;
-                }
-            }
             //console.log("Goal is: " + row);
             //console.log(closest);
-            // Start from both sides out and find sets of tiles and see if each side can get made
-            // ORRR if half of it can be made, because then we can just do the same thing twice!!
-            // ORRRR if a quarter of it can be made or similar
             /*
-            let validLeft = [];
-            for (let i = 0; i < row.length; i++) {
-                let left = Array(row.length).fill(0);
-                for (let j = 0; j <= i; j++) {
-                    left[j] = row[j];
-                }
-                if (this.inConfiguration(left) != -1) { // we can make this one, should make a checkHalf or checkQyarter function to see if it can be made with the given board size
-                    validLeft.push({ config: left, times: 1 });
-                }
-                let halves = this.findHalves(left, [], 2);
-                for (let h = 0; h < halves.length; h++) {
-                    validLeft.push({ config: halves[h].config, times: halves[h].times });
-                }
-            }
-            let validRight = [];
-            for (let i = row.length - 1; i >= 0; i--) {
-                let right = Array(row.length).fill(0);
-                for (let j = row.length - 1; j >= i; j--) {
-                    right[j] = row[j];
-                }
-                let index = this.inConfiguration(right);
-                if (index != -1) {
-                    validRight.push({ config: right, times: 1 });
-                }
-                let halves = this.findHalves(right, [], 2);
-                for (let h = 0; h < halves.length; h++) {
-                    validRight.push({ config: halves[h].config, times: halves[h].times });
-                }
-            }
-            let allValid = [...validRight];
-            for (const h of validLeft) {
-                allValid.push(h);
-            }
+            Valid Right and Left stuff used to be here
             */
-            let allValid = [];
-            let halves = this.findHalves(row, [], 2);
-            for(let i = 0; i < halves.length; i++){
-                allValid.push({config: halves[i].config, times: halves[i].times});
-            }
-           
+            let allValid = this.findRealHalves(row);
             //console.log("All Valid: ");
             let bestLen = row.length; // want it to be small, its really the number of zeros in the given row
             let bestOnes = [];
             let oneList = [];
-            for (const r of allValid) {
-                //console.log(r);
-                let zeros = 0;
-                let onRight = false;
-                let onLeft = false;
-                for (let v = 0; v < r.config.length; v++) {
-                    if (r.config[v] === 0) {
-                        zeros = zeros + 1;
-                        if (v === 0) onLeft = true;
-                        if (v === r.config.length) onRight = true;
-                    }
-                }
-                if (zeros === bestLen) {
-                    bestOnes.push(r);
-                }
-                else if (zeros < bestLen) {
-                    bestLen = zeros;
-                    bestOnes = [r];
-                }
-                if(zeros === row.length - 1){
-                    oneList.push(r);
-                } 
-            }
+            allValid.forEach((r) =>{
+                bestOnes.push(r);
+            })
             //console.log(bestOnes);
             list = bestOnes;
-            switch (bestLen) {
-                case 0:
-                    //console.log("Totally Filled, Yippeee!");
-                    break;
-                case 1:
-                    bestOnes.forEach((row) => { // 3-1s have a config and a times, but they also have a decomp property
-                        for(let i = 0; i < oneList.length; i++){
-                            if(row.config[0] === 0 && oneList[i].config[0] !== 0){
-                                let t = row.times >= oneList[i].times ? row.times : oneList[i].times;
-                                let newRow = {config: row.config, times: t, decomp: [row, oneList[i]]}
-                                newRow.config[0] = oneList[i].config[0];
-                                //list.push(newRow)
-                            }
-                            else if(row.config[row.config.length -1] === 0 && oneList[i].config[row.config.length - 1] !== 0){
-                                let t = row.times >= oneList[i].times ? row.times : oneList[i].times;
-                                let newRow = {config: row.config, times: t, decomp: [row, oneList[i]]}
-                                newRow.config[newRow.config.length -1] = oneList[i].config[oneList[i].config.length-1];
-                                //list.push(newRow);
-                            }
-                        }
-                    })
-                    //console.log("Good, most likely");
-                    break;
-                default:
-                    //console.log("Don't know about that chief");
-                    break;
-            }
 
             // if any config in allValid is of length board.length, and there are enough tiles to do the number of times, then the row can be made
             // ones with length board.length - 1 should be easy enough to make as well, as long as there is enough space for the number of times
@@ -834,8 +699,8 @@ class TileRows {
             if (rowSet.slide == 0) {
                 for (let i = 0; i < rowSet.tileRows.length; i++) {
                     if(rowSet.tileRows[i].decomps){
-                        let d1 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[0].config)];
-                        let d2 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[1].config)];
+                        let d1 = this.inFilledConfigs(rowSet.tileRows[i].decomps[0].config);
+                        let d2 = this.inFilledConfigs(rowSet.tileRows[i].decomps[1].config);
                         let nd1 = `3${d1[0][1]}${d2[0][2]}`
                         let nd2 = `3${d2[0][1]}${d2[0][2]}`
                         d1[0] = nd1;
@@ -863,7 +728,7 @@ class TileRows {
                     else{
                         for (let j = 0; j < rowSet.tileRows[i].times; j++) {
                             //console.log(rowSet.tileRows[i]);
-                            let decomp = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].config)]
+                            let decomp = this.inFilledConfigs(rowSet.tileRows[i].config);
                             let newFirstDecomp = `3${decomp[0][1]}${decomp[0][2]}`
                             decomp[0] = newFirstDecomp;
                             if(moveSet.length < 1){
@@ -879,8 +744,8 @@ class TileRows {
             else if (rowSet.slide == 2) {
                 for (let i = rowSet.tileRows.length - 1; i >= 0; i--) {
                     if(rowSet.tileRows[i].decomps){
-                        let d1 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[0].config)];
-                        let d2 = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].decomps[1].config)];
+                        let d1 = this.inFilledConfigs(rowSet.tileRows[i].decomps[0].config);
+                        let d2 = this.inFilledConfigs(rowSet.tileRows[i].decomps[1].config);
                         let nd1 = `2${d1[0][1]}${d2[0][2]}`
                         let nd2 = `2${d2[0][1]}${d2[0][2]}`
                         d1[0] = nd1;
@@ -907,7 +772,7 @@ class TileRows {
                     }
                     for (let j = 0; j < rowSet.tileRows[i].times; j++) {
                         //console.log(rowSet.tileRows[i]);
-                        let decomp = this.filledDecomps[this.inFilledConfigs(rowSet.tileRows[i].config)];
+                        let decomp = this.inFilledConfigs(rowSet.tileRows[i].config);
                         let newFirstDecomp = `2${decomp[0][1]}${decomp[0][2]}`
                         decomp[0] = newFirstDecomp;
                         if(moveSet.length < 1){
@@ -1037,12 +902,5 @@ class TileRows {
         combine(0, []);
 
         return result;
-    }
-
-    printConfigsAndDecomps(){
-        for(let i = 0; i < this.configurations.length; i++){
-            console.log(`config ${this.configurations[i]}`)
-            console.log(`decomp: ${this.configDecomps[i]}\n`);
-        }
     }
 }

@@ -20,9 +20,81 @@ window.onload = function() {
   }
 }
 
+document.getElementsByClassName("title")[0].addEventListener("click", () =>{
+  let board = [[0,0,1,0],[1,0,1,0],[0,0,1,0],[0,1,1,1]];
+  let mapping = {"rgb(0, 0, 0)": 0, "rgb(255, 255, 255)": 1};
+
+    document.getElementById("loadingDiv").style.display = "block";
+    document.getElementById("loader").style.display = "block";
+    setTimeout(() => {
+       game.makeImage(board, mapping, 200);
+    }, 20);
+    setTimeout(() => {
+      game.restart();
+      let newBoard = shift(board, 2, 5);
+      game.makeImage(newBoard, mapping, 200);
+    }, 11000);
+})
+
+// play life with colored 2048 boards
+
+const shift = function(board, direction, number){
+  if(!number) number = 0;
+  if(direction == 2){
+    let last = board[board.length-1];
+    for(let i = board.length -1; i >= 0; i--){
+      if(i == 0){
+        board[i] = last;
+      }
+      else{
+        board[i] = board[i-1]
+      }
+    }
+  }
+  else if(direction == 0){
+    let first = board[0];
+    for(let i = 0; i < board.length; i++){
+      if(i == board.length-1){
+        board[i] = first;
+      }
+      else{
+        board[i] = board[i+1];
+      }
+    }
+  }
+  else{
+    for(const row of board){
+      let first = row[0];
+      let last = row[row.length-1];
+      if(direction == 3){
+        for(let i = 0; i < row.length; i++){
+          if(i === row.length - 1){
+            row[i] = first;
+          }
+          else{
+            row[i] = row[i+1];
+          }
+        }
+      }
+      else if(direction == 1){
+        for(let i = row.length-1; i >= 0; i--){
+          if(i === 0){
+            row[i] = last;
+          }
+          else{
+            row[i] = row[i-1];
+          }
+        }
+      }
+    }
+  }
+  return board;
+}
+
 document.getElementById('makeImageButton').addEventListener("click", async function(){
   if(game.designer){
     let colorMap = makeColorBoardFromPicker();
+    console.log(JSON.stringify(colorMap.map));
     let openLoad = new Promise((resolve, reject) => {
       document.getElementById("loadingDiv").style.display = "block";
       document.getElementById("loader").style.display = "block";
@@ -67,7 +139,6 @@ document.getElementById('designerButton').addEventListener("click", () => {
     let zeros = Array(Number(game.grid.size)).fill(0);
     // Fill in configurations and configDecomps in tileRows
     game.tileRows.evaluateState(zeros, []);
-    console.log(game.tileRows.getFilledConfigs());
     document.getElementById("designerButton").innerHTML = "Close Designer";
   }
   else{
@@ -167,8 +238,12 @@ const makeImagePickerBoard = function(size){
     for(let j = 0; j < size; j++){
       let tile = document.createElement("div")
       tile.setAttribute("class", "colorTile");
-      tile.addEventListener("click", (e) => {
+      tile.addEventListener("mousedown", (e) => {
         changePickerTileColor(e.target);
+      })
+      tile.addEventListener("contextmenu", (e) =>{
+        e.preventDefault();
+        changePickerTileBlack(e.target);
       })
       row.appendChild(tile);
     }
@@ -177,45 +252,13 @@ const makeImagePickerBoard = function(size){
 }
 
 const changePickerTileColor = function(htmlTile){
-  let style = getComputedStyle(htmlTile).backgroundColor;
   let newColor;
-  /*
-  switch(style){
-    case 'rgb(0, 0, 0)':
-      newColor = "rgb(255, 0, 0)";
-      break;
-    case "rgb(255, 0, 0)":
-      newColor = "rgb(255, 165, 0)";
-      break;
-    case "rgb(255, 165, 0)":
-      newColor = "rgb(255, 255, 0)";
-      break;
-    case "rgb(255, 255, 0)":
-      newColor = "rgb(0, 255, 0)";
-      break;
-    case "rgb(0, 255, 0)":
-      newColor = "rgb(0, 0, 255)";
-      break;
-    case "rgb(0, 0, 255)":
-      newColor = "rgb(75, 0, 130)";
-      break;
-    case "rgb(75, 0, 130)":
-      newColor = "rgb(148, 0, 211)";
-      break;
-    case "rgb(148, 0, 211)":
-      newColor = "rgb(255, 255, 255)";
-      break;
-    case "rgb(255, 255, 255)":
-      newColor = "rgb(0, 0, 0)";
-      break;
-    default:
-      newColor = "rgb(0, 0, 0)";
-      break;
-  }
-  */
   newColor = currentColor;
   htmlTile.setAttribute("style", `background-color: ${newColor}`);
-  makeColorBoardFromPicker();
+}
+
+const changePickerTileBlack = function(htmlTile){
+  htmlTile.setAttribute("style", "background-color: black;");
 }
 
 const resetColorBoard = function(){
