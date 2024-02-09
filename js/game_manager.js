@@ -36,20 +36,6 @@ GameManager.prototype.download = function (filename, text) {
   }
 }
 
-GameManager.prototype.downloadCSV = function (filename, text) {
-  var pom = document.createElement('a');
-  pom.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(text));
-  pom.setAttribute('download', filename);
-
-  if (document.createEvent) {
-      var event = document.createEvent('MouseEvents');
-      event.initEvent('click', true, true);
-      pom.dispatchEvent(event);
-  }
-  else {
-      pom.click();
-  }
-}
 
 GameManager.prototype.appendState = function(state, move){
   let newState = []
