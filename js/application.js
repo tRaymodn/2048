@@ -37,6 +37,28 @@ document.getElementsByClassName("title")[0].addEventListener("click", () =>{
 })
 
 // play life with colored 2048 boards
+// makes 2048 boards to be the game of life
+// assume it only takes in a board with ones and zeros on it (make function to transcribe boards from multi-color to monocolor)
+// going to take in a board and return a new board based on which cells lived and died
+const GOL = function(board){
+  for(let i = 0; i < board.length; i++){
+    for(let j = 0; j < board[i].length; j++){
+      let deadCells = 0;
+      let aliveCells = 0;
+      if(i > 0){
+        if(board[i-1][j] == 0) deadCells = deadCells +1;
+        else aliveCells = aliveCells +1;
+      }
+      else if(i < board.length){
+        if(board[i+1][j] == 0) deadCells = deadCells+1;
+        else aliveCells = aliveCells+1;
+      }
+      if(j > 0){
+        if(board[i][j-1] == 0) deadCells = deadCells + 1;
+      }
+    }
+  }
+}
 
 const shift = function(board, direction, number){
   if(!number) number = 0;
