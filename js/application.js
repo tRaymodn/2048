@@ -207,9 +207,14 @@ speedInput.value = newSpeed;
 
 document.getElementById('singleMove').addEventListener("click", () => {
 
+
+
   
-  let scr = scoreboard();
-  game.move(scr.m);
+  let scr = crystalBall();
+  game.move(scr);
+  //let M = crystalBall();
+  //game.move(M);
+  
 
   //console.log("R" , isLockedRow(game.grid, 0))
 
@@ -217,7 +222,6 @@ document.getElementById('singleMove').addEventListener("click", () => {
 
   
   
-
       
       //futureHendrix(2, game.grid)
       //console.log(JSON.stringify(futureList) + "length: " + futureList.length + "direction: " + move)
@@ -225,8 +229,48 @@ document.getElementById('singleMove').addEventListener("click", () => {
 
 })
 
+  // way to favor higher percentages to choose better values  
+  document.getElementById('TEST').addEventListener("click",() =>{
+  let test =  scorekeeper(5, 1,1,1,1,1,1,0);
+  game.download("HSCORES.txt", JSON.stringify(test.scores[0]));
+  });
+
 document.getElementById('simulate').addEventListener("click",() =>{
-  scorekeeper(1000)
+  let someScores = []
+  let highScores = []
+  let values = [ 0, 1];
+  //recursively improve
+  let perms =  generatePerms(values, 6);   //[[1,1,1,1,1,1],[1,1,1,1,1,0],[1,1,1,1,0,1],[1,1,1,1,0,0]] 
+
+  for(let perm of perms){
+    let scr = scorekeeper(10, perm[0], perm[1],perm[2], perm[3], perm[4],perm[5]);
+    someScores.push(scr.scores);
+  }
+  //console.log(JSON.stringify(someScores));
+  
+  for (let scr of someScores){
+    
+    let metrics  = scr[0];
+     let date = scr[1];
+     let weights = scr[2];
+      let fourBest = scr[3];
+     
+     
+     //console.log(values);
+     for (let pObj of metrics){
+      if ((parseInt(pObj.V) > 512)){
+        highScores.push(weights, metrics);
+        break;
+      }
+     }
+
+  }
+
+  //console.log(highScores);
+  game.download("HIGHSCORES.txt", JSON.stringify(highScores));
+
+
+  
 })
 
 document.getElementById('autoMove').addEventListener("click", () => {
@@ -236,8 +280,9 @@ document.getElementById('autoMove').addEventListener("click", () => {
         clearInterval(interval)
         autoMoving = false;
       }else{
-      let scr = scoreboard();
-      game.move(scr.m);
+        let M = crystalBall();
+      
+      game.move(M);
       let state = game.getBoardState();
       //console.log(state);
       
@@ -251,6 +296,115 @@ document.getElementById('autoMove').addEventListener("click", () => {
     autoMoving = false;
   }
 })
+/*
+  TODO: 
+ ///AVG VS SUM 
+ // NOT MAKING MOVES THAT ARE DETRIMENTAL
+ // MORE FUTURE STATES
+ // VARY WEIGHTS
+*/
+const crystalBall = function (){
+  let U = 0;
+  let R = 0; 
+  let D = 0;
+  let L = 0;
+  let shiftScoresU = [];
+  let shiftScoresR = [];
+  let shiftScoresD = [];
+  let shiftScoresL = [];
+
+  futureList = [];
+  futureHendrix(2, game.grid , true , -1) 
+  //console.log(futureList);
+  
+ for (let newGrid of futureList){
+  let M = newGrid.move ;
+  let spawned = newGrid.tile;
+  let P = points( newGrid.grid, M, 1,1,1,1,1,1) // lg mono empty chain shift adj
+  let aScr = P.eq;
+  //console.log(spawned)
+
+  switch (M){
+    case 0:
+      if (spawned == 2){
+        U +=  (aScr * 0.9);
+        shiftScoresU.push(P.numEmpty);
+      } else {
+        U += (aScr * 0.1);
+        shiftScoresU.push(P.numEmpty);
+      }
+      break;
+    case 1:
+      if (spawned == 2){
+        R+= (aScr * 0.9);
+        shiftScoresR.push(P.numEmpty);
+      } else {
+        R += (aScr * 0.1);
+        shiftScoresR.push(P.numEmpty);
+      }
+      break;
+    case 2:
+      if (spawned == 2){
+        D += (aScr * 0.9 );
+        shiftScoresD.push(P.numEmpty);
+      } else {
+        D += (aScr * 0.1) ;
+        shiftScoresD.push(P.numEmpty);
+      }
+      break;
+
+    case 3:
+
+    if (spawned == 2){
+      L+= (aScr * 0.9);
+      shiftScoresL.push(P.numEmpty);
+    } else {
+      L+= (aScr * 0.1);
+      shiftScoresL.push(P.numEmpty);
+    }
+      break;
+  }
+ }
+
+ if(shiftScoresU.length <= 0){
+  shiftScoresU.push(0)
+ }
+ if(shiftScoresR.length <= 0){
+  shiftScoresR.push(0)
+ }
+ if(shiftScoresD.length <= 0){
+  shiftScoresD.push(0)
+ }
+ if(shiftScoresL.length <= 0){
+  shiftScoresL.push(0)
+ }
+ console.log(shiftScoresU,shiftScoresR,shiftScoresD,shiftScoresL )
+ //console.log(U, R, D, L);
+ let UorD = (U > D) ? { avg: U/shiftScoresU.length, dir: 0 } : { avg: D/ shiftScoresD.length, dir: 2 };
+ let LorR = (L > R) ? { avg: L/shiftScoresL.length, dir: 3 } : { avg: R/shiftScoresR.length, dir: 1 };
+
+ console.log( U/shiftScoresU.length,D/ shiftScoresD.length, L/shiftScoresL.length ,R/shiftScoresR.length);
+
+/*
+ if (sumU == sumD){
+  let shiftSumU = shiftScoresU.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+  let shiftSumD = shiftScoresD.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+  UorD = (shiftSumU > shiftSumD) ?  { avg: sumU, dir: 0 } : { avg: sumD, dir: 2 };
+  
+
+ }
+ if (sumL == sumR){
+  let shiftSumL = shiftScoresL.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+  let shiftSumR = shiftScoresR.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+  LorR = (shiftSumL > shiftSumR) ?  { avg: sumL, dir: 3 } : { avg: sumR, dir: 1 };
+  
+ }
+ */
+ let final = (UorD.avg > LorR.avg) ? UorD.dir : LorR.dir;
+console.log(final)
+
+return final;
+}
 
 
 document.getElementById("colorPickerReset").addEventListener("click", () => {
@@ -759,6 +913,14 @@ const getRowReverse = function (g, r){
   return arr;
 }
 
+const getColReverse = function (g, c){
+  let arr = []
+  for (let i = g.size - 1; i >= 0; i--){
+      arr.push(g.cells[c][i])
+    }
+  return arr;
+}
+
 
 const countRow = function(r){
   let cnt = 0;
@@ -771,38 +933,55 @@ const countRow = function(r){
   }
 
   const getConsScr = function (arr){
-    let scores = [];
-    for(let i = 0; i < arr.length; i++){
-      if (arr[i] == null || arr[i + 1] == null){
+    let cnt = 0;
+    let temp;
+    for(let i = 0; i < arr.length  - 1; i++){
+      if (arr[i] == null && arr[i + 1] == null){
         continue;
-      } else if (arr[i].value == arr[i+1].value){
-        let cnt = 2;
-        let temp = i + 1
-        while(true){
-          if (temp < arr.length - 1 && arr[temp + 1] != null && arr[temp].value == arr[temp + 1].value){
-            cnt++;
-            temp++;
-          } else{
-            scores.push(arr[i + 1].value * (cnt - i))
-            break;
+      }else if (arr[i] == null){
+        if (temp){
+          if (arr[i+1].value == temp.value){
+            cnt++
           }
         }
+        continue;
+
+      }
+      else if (arr[i+1] == null){
+        if (!temp){
+           temp = arr[i];
+           continue;
+        }
+        if (arr[i]. value == temp.value){
+            cnt++
+            continue;
+        }
+      } else if (arr[i].value == arr[i+1].value){
+        cnt++;
       }
     }
-    return scores.reduce((accumulator, currentValue) => {
-      return accumulator + currentValue;
-    }, 0); 
+    return cnt;
   }
 
-  const countRowCons = function(r){
-    let cnt = 0;
+  //TODO: Make NULL TILES  NOT MATTER
+  const getRowCons = function(r){
+    let arr = [];
     for(let i = 0; i < r.length ; i++){
       if (r[i] != null){
-        cnt++;
+        arr.push(r[i]);
+      } else break;
+    }
+    return arr;
+  }
+  const getColCons = function(c){
+    let arr = [];
+    for(let i = 0; i < c.length ; i++){
+      if (c[i] != null){
+        arr.push(c[i]);
       }else break;
     }
-      return cnt;
-    }
+    return arr;
+  }
 
   const countRowNull = function(r){
     let cnt = 0;
@@ -820,7 +999,7 @@ const getCurrentOccupiedTiles = function() {
   let g = game.grid;
   for (let i = 0; i < g.cells.length; i++){
     for (let j = 0; j < g.cells[i].length; j++){
-      if (g.cells[i][j] !== null){
+      if (g.cells[i][j] != null){
         currOccupied.push(g.cells[i][j]);
       }
     }
@@ -854,14 +1033,18 @@ const getOccupiedResults = function(g, i){
   return {tiles: currOccupied, moved: result.moved };
 }
 let futureList = []
+let move;
 
-const futureHendrix = function(times, grid){
-  futureList = []
+const futureHendrix = function(times, grid, isFirst, firstMove){
+  move = firstMove;
   if(times > 0){
     for(let i = 0; i < 4; i++){
       let result = getAllResults(grid, i);
-      console.log(`${i} is ${result.moved} a valid move, iteration:${times}`)
+      //console.log(`${i} is ${result.moved} a valid move, iteration:${times}`)
       if(result.moved){
+        if (isFirst){
+          move = i;
+        }
         let res = make2dArray(result.tiles)
         let newg = new Grid(grid.size, res);
         let unnocupied = newg.availableCells()
@@ -873,21 +1056,26 @@ const futureHendrix = function(times, grid){
                 let tile2 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 2);
                 newerg2.insertTile(tile2);
                 if(times === 1){
-                  futureList.push({move: i, grid: newerg2});
+                  futureList.push({move: move, grid: newerg2, tile: 2});
                 }
                 else{
-                  futureHendrix(times - 1, newerg2);
+
+                   
+                  futureHendrix(times - 1, newerg2, false, move);
+                  
                 }
                 break;
               case 1:
                 let newerg4 = new Grid(grid.size, res);
+                //console.log(newerg4)
+                //console.log(res)
                 let tile4 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 4);
                 newerg4.insertTile(tile4);
                 if(times === 1){
-                  futureList.push({move: i, grid: nerwerg4});
+                  futureList.push({move: move, grid: newerg4 , tile: 4});
                 }
                 else{
-                  futureHendrix(times - 1, newerg4)
+                  futureHendrix(times - 1, newerg4, false, move);
                 }
                 break;
             }
@@ -897,6 +1085,7 @@ const futureHendrix = function(times, grid){
 
     }
   }
+  return futureList;
 }
 
 const make2dArray = function(array){
@@ -965,23 +1154,14 @@ const bestToWorst = function(tile){
 let scrLeft = 0; 
 let scrRight = 0;
 
-const points = function(game, grid, dir){
-
+const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
+  //console.log(val1, val2, val3, val4, dir)
   let lg = 0; // largest in corner
-  let ld = 0; // loading tiles
+  //let ld = 0; // loading tiles
   //let lk = 0; // locking row
   //let mt = 0; // maintain stucture
   let nextRowI;
-  let currRowI;
   let nextColI;
-  let currColI;
-  let nextMultiplier = 1;
-  let currMultiplier = 1; 
-  let nextChain;
-  let currChain;
-  let nextScr = 0;
-  let currScr = 0;
-  let currVal = 0;
   let nextVal = 0;
   let adjLoad = 0;
   let shiftLoad = 0;
@@ -992,34 +1172,39 @@ const points = function(game, grid, dir){
   -LARGEST IN CORNER 
   */
 
-  // Get position of the max tile in the current grid if any are in the corner, save the row, otherwise our row is the first entry in the largest tiles array 
-  let currPos = game.grid.getMaxPos()
-  currRowI = currPos[0].y;
-  currColI = currPos[0].x;
-  for (let g of currPos){
-    currVal = g.value/1.5;  // TODO:
-    if (isCorner(g.x, g.y)){
-      currVal = g.value
-      currRowI = g.y 
-      currColI = g.x
-      break;
-    }
-  }
-  
 
   // get position of the largest tile in the next grid, if so save the value and the row , otherwise the value is zero and we use the first entry in the largest tiles array
+  let currMax = game.grid.getMaxPos()[0];
   let nextPos = grid.getMaxPos()
   nextRowI = nextPos[0].y
   nextColI = nextPos[0].x;
+  nextVal = 1 // TODO:
   for (let p of nextPos){
-    nextVal = p.value/1.5// TODO:
-    if (isCorner(p.x, p.y)){
-      nextVal = p.value
+    if (isCorner(p.x, p.y) && p.value > currMax){
+      nextVal = p.value * 2 ;
+      nextRowI = p.y;
+      nextColI = p.x
+      break;
+    }
+    else if ( isCorner(p.x,p.y)){
+      nextVal = p.value;
       nextRowI = p.y;
       nextColI = p.x
       break;
     }
   }
+
+  /*
+  EMPTY TILES
+  */
+
+  let occTiles = getOccupiedResults(grid, dir);
+  let currOcc = getCurrentOccupiedTiles();
+  let currEmpty = (Math.pow(game.grid.size, 2) - 1 - currOcc.length)
+ let numEmpty = (Math.pow(grid.size , 2) - 1 -  occTiles.tiles.length);
+ let merges = (numEmpty - currEmpty) ;
+
+
 
 
   /*
@@ -1027,41 +1212,30 @@ const points = function(game, grid, dir){
   */ 
 
   // determine which index to start chaining from, then get the row in either normal order or reverse order for current grid
-  let nextRow = getRow(grid, nextRowI);
-  let j;
-  let nextRR = false;
-  let currRow = getRow(game.grid, currRowI);
-  let i;
-  let currRR = false;
+  let RR = false;
+  let CR = false;
 
-  j = getRowMaxIndex(nextRow) + 1;
-  if ( j >= nextRow.length / 2 ){
-    nextRow = getRowReverse(grid, nextRowI);
-    j = getRowMaxIndex(nextRow) + 1;
-    nextRR = true;
-  }
+  if ( nextColI >= (grid.size - 1 ) / 2 ) RR = true;
+  if ( nextRowI  >= (grid.size - 1 ) / 2) CR = true;
+  
 
-  i = getRowMaxIndex(currRow) + 1;
-  if ( i >= currRow.length / 2 ){
-    currRow = getRowReverse(game.grid, currRowI);
-    i = getRowMaxIndex(currRow) + 1;
-    currRR = true;
-  }
+  // obtain chain metrics for comparison later 
+  //let mono = assessMono(grid, RR, CR ,dir);
+  let chain  = assessChain(grid, nextRowI, nextColI, RR, CR, dir);
+  let mono = assessMono(grid, RR, CR, dir);
 
-   // obtain chain metrics for comparison later 
-   let obj = assessChain(grid, nextRow, nextRowI, j , nextRR);
+  let ourChain = (chain.mC > chain.mR) ?  chain.arrC : chain.arrR
+  let chainScr = rowValue(ourChain) / ourChain.length;  //TODO: 
+  let monoScr = mono.c + mono.r;
 
-   nextMultiplier = obj.m // length
-   nextChain = obj.arr // tiles
-   nextScr = obj.scr // sum - length TODO:
- 
- // obtain chain metrics for comparison later 
-   let p = assessChain(game.grid, currRow, currRowI, i, currRR );
- 
-   currMultiplier = p.m; // length
-   currChain = p.arr; // tiles
-   currScr = p.scr; // sum - length TODO:
 
+
+
+
+  //console.log(mono.c, mono.r)
+  //console.log(chain.mR, chain.arrR, chain.mC, chain.arrC )
+
+ // tiles
 
  /*
   LOADING TILES
@@ -1069,72 +1243,56 @@ const points = function(game, grid, dir){
 
   // given that we have a chain present before and after a move we always want to consider both the average difference in the sum
   // and the differential between the counts of the chains as a negative value for either will be representative of the change of the board state
-
-
-    let initSum = rowValue(currChain);
-    let initCount = countRow(currChain)
-
-    let reversedCurr = currChain.slice();
-    let reversedNext = nextChain.slice();
-
-    let currPositions = [];
-    let nextPositions = [];
-
-    for (let tile of reversedCurr){
-      let pos = {x: tile.x , y: tile.y}
-      currPositions.push(pos);
-    }
-
-    for (let tile of reversedNext){
-      let pos = {x: tile.x , y: tile.y}
-      nextPositions.push(pos);
+    let pos;
+    let broken = [];
+    for (let t of ourChain){
+      pos = {x: t.x , y: t.y}
+      broken.push(pos);
     }
 
     //let adjCurr = loadAdj(game.grid, currPositions)
-    let adjNext = loadAdj(grid, nextPositions)
+    let adjNext = loadAdj(grid, broken )
     
 
     //want to create a method that will run until all tiles that are adjacent to other tiles havea score 
     // always have to move so look at next adj and calcualte score of adj tiles 
     let desAdj = [];
 
-    while (nextPositions.length < getOccupiedResults(grid, dir).tiles.length && adjNext.length > 0 ){
-      adjNext = new Set(loadAdj(grid, nextPositions))
+    while (broken.length < getOccupiedResults(grid, dir).tiles.length && adjNext.length > 0 ){
+      adjNext = new Set(loadAdj(grid, broken))
       adjNext = [...adjNext]
       for (let tile of adjNext){
         let pos = {x: tile.x , y: tile.y}
-        nextPositions.push(pos);
+        broken.push(pos);
       }
       desAdj.push(adjNext.map(item => item.value));
 
     }
-    //console.log("next positions" , nextPositions)
-    //console.log("adj next" ,  adjNext);
-    //console.log(nextPositions.length)
-    //console.log(getOccupiedResults(grid, dir).tiles.length)
-    //console.log(dir)
-    //console.log("next positions" , nextPositions)
-    //console.log("desAdj" , desAdj)
-
-    //console.log("adj curr" , adjCurr);
-    //console.log("adj next" ,  adjNext);
 
     let nextScrs = [];
     
+    //console.log(desAdj);
     if(desAdj.length > 0){
-    for( i = 0; i < desAdj.length; i++){
+    for( let i = 0; i < desAdj.length; i++){
+      for(let j = 0; j < desAdj[i].length; j++){
+        desAdj[i][j] = (desAdj[i][j] * ((desAdj[i].length - j) / desAdj[i].length));
+      }
       const sumNext = desAdj[i].reduce((accumulator, currentValue) => {
         return accumulator + currentValue;
       }, 0);
+      //console.log("SUMfirst", sumNext, dir);
+      
 
-
-      nextScrs.push(sumNext * ((desAdj.length - i) / desAdj.length) / (nextVal / 2)); // TODO:
+      nextScrs.push(sumNext  * ((desAdj.length - i) / desAdj.length ));
 
     }
+
 
     adjLoad = nextScrs.reduce((accumulator, currentValue) => {
       return accumulator + currentValue;
     }, 0);
+     //console.log("SumNext" ,nextScrs, adjLoad , dir);
+
   }
 
 
@@ -1148,15 +1306,15 @@ const points = function(game, grid, dir){
     */
     
 
-    let nextSum = rowValue(nextChain);
-    let nextCount = countRow(nextChain);
+    //let nextSum = rowValue(nextChain);
+    //let nextCount = countRow(nextChain);
     
     //console.log( "Current Chain", currChain);
     //console.log("Next Chain", nextChain);
 
 
-    let fac = nextSum - initSum ; 
-    let countDif =  nextCount - initCount ; 
+   // let fac = nextSum - initSum ; 
+    //let countDif =  nextCount - initCount ; 
 
     //console.log("FAC" , fac , "Dif" , countDif)
 
@@ -1170,10 +1328,8 @@ const points = function(game, grid, dir){
 
   /*
   LOCKING ROW 
-   // TODO:
-    - verify mutiple Rows indexing (more than one row locked)
 
-    // TODO: Make SHIFT LOAD EXTEND TO ALL ROWS OF THE BOARD
+
     
 
     want to look at a grids next positions
@@ -1207,7 +1363,6 @@ const points = function(game, grid, dir){
 
  
 
-  let lockedCurr = isLockedRow(game.grid, currRowI);
   let lockedNext = isLockedRow(grid, nextRowI);
 
   let shiftScores = []
@@ -1216,26 +1371,26 @@ const points = function(game, grid, dir){
     
     //determine direction to check 
     if( nextColI < grid.size / 2  ){
-      for(let i = nextColI; i < grid.size - 1; i ++ ){
+      for(let i = 0; i < grid.size - 1; i ++ ){
         let col = getCol(grid, i) ;
-        shiftScores.push(getConsScr(col) * (grid.size - 1 - i) / (grid.size - 1) / nextVal) ; // TODO: 
+        shiftScores.push(getConsScr(col)) ; // TODO: 
       } 
     }else{
-      for(let i = nextColI; i > 0; i-- ){
+      for(let i = grid.size - 1; i >= 0; i-- ){
           let col = getCol(grid, i) ;
-          shiftScores.push(getConsScr(col) * (grid.size - 1 - i) / (grid.size - 1) / nextVal);
+          shiftScores.push(getConsScr(col));
       } 
     }
   }else {
     if( nextRowI < grid.size / 2  ){
-      for(let i = nextRowI; i < grid.size - 1; i ++ ){
+      for(let i = 0; i < grid.size - 1; i ++ ){
         let row = getRow(grid, i) ;
-        shiftScores.push(getConsScr(row)* (grid.size - 1 - i) / (grid.size - 1) / nextVal);
+        shiftScores.push(getConsScr(row));
       } 
     }else{
-      for(let i = nextRowI; i > 0; i-- ){
+      for(let i = grid.size-1; i >= 0; i-- ){
           let row = getRow(grid, i) ;
-          shiftScores.push(getConsScr(row)* (grid.size - 1 - i) / (grid.size - 1) / nextVal );
+          shiftScores.push(getConsScr(row) );
       } 
     }
   }
@@ -1247,33 +1402,27 @@ const points = function(game, grid, dir){
 
 
     
-
-
-  if(lockedCurr && !lockedNext || !lockedCurr && !lockedNext){
-    lk = -1;
-  }
-  if (lockedCurr && lockedNext){
-    lk = 1;
-  }
-  if (!lockedCurr && lockedNext){
-    lk = 2;
-  }
-  
-
+    //console.log("DIR" , dir); /// direction of move
+    //console.log("CHAIN", ourChain); // starting at largest tile, and going towards row and column index with more space, tile muxt be 1/2 previous tile value 
+    //console.log("MONO", monoScr); // number of rows and columns that are descending 
+    //console.log("LG", nextVal); // largest value on the board, 1/2 if not in corner
+    //console.log("EMPTY" , numEmpty )
+    //console.log("ADJ", desAdj); // all tiles on board into heiarchy of closest to further adj tiles
+    //console.log("SHIFT", shiftLoad); // number of tiles that are the same for all rows or columns
   //SCORES 
-  mt =  nextMultiplier - currMultiplier;
+  //mt =  nextMultiplier - currMultiplier;
   lg =  nextVal;
-  ld = fac + countDif
+  //ld = fac + countDif
   
 
   //console.log("Largest In Corner:" , lg , "Chain Structure", des, "\n" );
   //console.log("Chain Multiplier" , multiplier, "LOCK" , lk, "LOAD" ,ld, "Mainchain", mt , '\n');
   //console.log("direction" , dir);
   //console.log("Scores", nextScr , currScr)
-  //console.log("Lg: ", lg , "Chain:" , nextScr - currScr ,"load", ld , "lock" ,lk , "mainchain:" ,  mt, "adjLoad" , adjLoad, "Shift" ,shiftLoad)
-  let eq =  lg + nextScr  + adjLoad  + shiftLoad //+ ld + lk +  mt //(maybe unimportant)
+ //console.log("Lg: ", lg , "Chain:" , chainScr , "Mono:" , monoScr  ,"adjLoad" , adjLoad, "Shift" ,shiftLoad , "EMPTY" , numEmpty)
+  let eq =  (lg * val1) + (monoScr*val2 ) + (merges*val3) + (chainScr *val4 ) + (shiftLoad*val5 ) + (adjLoad *val6)  //+ ld + lk +  mt //(maybe unimportant)
   //console.log(eq);
-  return {lg: lg , multip: nextScr ,  adjLoad: adjLoad  , shiftLoad: shiftLoad , eq: eq};
+  return {lg: lg , multip: chainScr , mono: monoScr, adjLoad: adjLoad  , shiftLoad: shiftLoad ,numEmpty: merges, eq: eq};
   }
 
 
@@ -1294,73 +1443,155 @@ const getLikes = function (above, below){
 TODO: clean 
 */
 
-const assessChain = function(grid, r, rIndex, startIndex,  rr){
-  let arr = [r[startIndex - 1]];
-  //console.log("METRICS CHAIN", grid, r, rIndex, startIndex,  rr)
-  let multiplier = 1;
-  let des = 0;
-  let temp = rIndex;
-  for (let i = startIndex; i < r.length; i++){
-    //console.log("MULT: " + multiplier )
-    if(r[i - 1] == null || r[i] == null){
-      //console.log(r[i - 1] , r[i])
-      break;
-    }
-    let prev = r[i - 1]
-    let curr = r[i]
-    //console.log("TILES" , prev, curr)
-    /*
-    if (curr.value == prev.value || curr.value == prev.value / 2){
-      arr.push(curr);
-      multiplier++;
-    }
-    else */ if (curr.value <= prev.value ){
-      arr.push(curr);
-      multiplier++;
-    }
+//MONOTONICITY
+// go through every row/ col and add 1 to score if every tile in that row is non increasing (including just one tile)
+// starting pos doesnt matter since all rows
 
-    else{
-      break;
+const assessMono = function (grid, rr, cr, dir){
+  let rowScr = 0;
+  let colScr = 0; 
+
+  for(let k = 0; k < grid.size; k++){
+    //let dist = Math.abs(j - nextColI);
+    let  r = getRow(grid, k);
+    let c = getCol(grid, k);
+
+    if (rr) r = getRowReverse(grid, k);
+    if (cr) c = getColReverse(grid, k);
+    
+
+    let consR = getRowCons(r);
+    let consC = getColCons(c);
+    //console.log("ROW",consR);
+    //console.log("COL",consC);
+    
+    for (let i = 0 ; i < consR.length - 1; i++){
+      let next = consR[i + 1]
+      let curr = consR[i];
+      if (next.value <= curr.value){
+        if (i == consR.length - 2){
+          rowScr++;
+        } else continue;
+      } else break;;
     }
+    //console.log("ROWSCR",rowScr++ , dir);
+ 
 
-    if (multiplier % grid.size - (startIndex - 1 ) == 0 ){
-      
-      //console.log("CHECK NEXT ROW")
-      if (rIndex >= grid.size / 2 ){
-        temp--;
-      }else {
-        temp++
-      }
-      //console.log(temp)
-      //console.log(rIndex)
-
-      
-      if (rr){
-        r = getRow( grid , temp )
-      } else{
-        r = getRowReverse( grid , temp)
-      }
-      //console.log("ROW: " + JSON.stringify(r))
-
-      if(r[0] != null && curr.value >= r[0].value){
-        //console.log("NEXTROW:" , curr,  r[0].value)
-        i = 0;
-        multiplier++;
-        arr.push(r[0])
-      }
-      
-      // compare curr last and prev next 
+    for (let j = 0 ; j < consC.length - 1; j++){
+      let next = consC[j + 1]
+      let curr = consC[j];
+      if (next.value <= curr.value){
+        if (j == consC.length - 2){
+          colScr++;
+        } else continue;
+      } else break;
     }
+    //console.log("COLSCR",colScr++, dir);
+
+
+    //determine if monotonic row / col
+    // if monotionic add to score
+    // if not go to next row
+    //higher score for roes closer to maxtile row
 
   }
-
-  let Sum = rowValue(arr);
-  let Count = countRow(arr);
-
-  let scr = Sum - Count
-
-  return {m: multiplier , arr: arr, scr: scr};
+  return {r: rowScr, c: colScr};
 }
+
+const assessChain = function(grid, nextRowI, nextColI,  rr, cr , dir){
+
+  //console.log("METRICS CHAIN", grid, r, rIndex, startIndex,  rr)
+  let multiplierR = 1;
+  let multiplierC = 1;
+  let tempR = nextRowI;
+  let tempC = nextColI;
+  
+  
+
+  let r = getRow(grid, nextRowI);
+  
+  if (rr) r = getRowReverse(grid, nextRowI);
+  let ColI = getRowMaxIndex(r);
+  let arrR = [r[ColI]];
+
+
+  for (let i = ColI; i < r.length - 1; i++){
+    let next = r[i + 1]
+    let curr = r[i];
+
+    //console.log("RNC" ,r, next, curr, ColI , i, dir);
+
+    if(next == null || curr == null) break;
+    
+    if ( next.value == curr.value || next.value == curr.value/2 ){
+    arrR.push(next);
+    multiplierR++;
+    } else break;
+
+    if (i == r.length - 2){
+      if (nextRowI > (grid.size - 1 )/ 2){
+        if(tempR != 0){
+          tempR--;
+        }else break;
+      } else if (tempR != grid.size - 1){
+        tempR++;
+      }else break; 
+
+      r = getRowReverse( grid , tempR)
+      if (rr) r = getRow( grid , tempR )
+
+      if(r[0] != null && (r[0].value  == next.value || r[0].value  == next.value / 2)){
+        rr = !rr;
+        i = -1; 
+        arrR.push(r[0]);
+        multiplierR++;
+      } else break;
+    }
+  }
+
+  let c = getCol(grid, nextColI);
+  if (cr) c = getColReverse(grid, nextColI);
+  let RowI = getRowMaxIndex(c);
+  let arrC = [c[RowI]];
+
+  for (let j = RowI; j < c.length - 1; j++){
+    let next = c[j + 1]
+    let curr = c[j];
+    //console.log("CNC" ,c, next, curr, RowI, j,  dir);
+
+    if(next == null || curr == null) break;
+    
+    if ( next.value == curr.value || next.value == curr.value/2 ){
+    arrC.push(next);
+    multiplierC++;
+    } else break;
+
+    if (j == c.length - 2){
+      if (nextColI > (grid.size - 1) / 2 ){ // TODO:
+        if (tempC != 0){
+          tempC--;
+        } else break;
+      } else if (tempC != grid.size - 1){
+        tempC++
+      }else break;
+      //console.log(tempC , nextColI,  dir);
+
+      c = getColReverse( grid , tempC)
+      if (cr) c = getCol( grid , tempC )
+
+      if(c[0] != null && (c[0].value  == next.value || c[0].value  == next.value /2 )){
+        cr = !cr;
+        j = -1; 
+        arrC.push(c[0]);
+        multiplierC++;
+      } else break;
+    }
+  }
+  return {mR: multiplierR , arrR: arrR, mC: multiplierC, arrC: arrC};
+}
+
+
+  
 
 
 const getRowMaxIndex = function(tiles){
@@ -1387,20 +1618,20 @@ const getValidMoves = function(){
 }
 
 
-const scoreboard = function(){
+const scoreboard = function(val1 ,val2 ,val3, val4, val5, val6,val7){
   let moves = getValidMoves()
   let P = []
   let best = Number.NEGATIVE_INFINITY
   let move;
-  let gamer = game
   let Values = [];
 
   for (let i of moves){
     //Values = [];
-    let result = gamer.getResultingPosition(gamer.grid, i);
-    let POINTS = points(gamer, result.grid, i); //OBJECT
+    let result = game.getResultingPosition(game.grid, i);
+    
+    let POINTS = points(result.grid, i , val1 ,val2 ,val3, val4, val5, val6, val7); //OBJECT
     let p = POINTS.eq ;
-    Values.push([POINTS.lg,POINTS.multip,POINTS.adjLoad,POINTS.shiftLoad, p])
+    Values.push([POINTS.lg,POINTS.multip, POINTS.mono, POINTS.adjLoad,POINTS.shiftLoad, POINTS.numEmpty, p])
 
     P.push(p)
   }
@@ -1417,6 +1648,8 @@ const scoreboard = function(){
       finVals = Values[_];
     }
   } 
+
+
   
 
   //console.log("POINTS for Each Move:" + P);
@@ -1484,28 +1717,33 @@ const loadAdj = function(grid, positions) {
 }
 
 
-const scorekeeper = function(iter) {
+const scorekeeper = function(iter, val1 ,val2 ,val3, val4, val5, val6 ,val7) {
   let scores = [];
   let date = new Date();
   let sp = 100;
   let values = [];
+  let best = []
   for(let i = 0 ; i <= iter; i++){
     if (!game.isGameTerminated()) {
-      let sc = scoreboard();
-      game.move(sc.m);
-      values.push(sc.p);
+      let m = crystalBall();
+      game.move(m);
+      //values.push(sc.p);
       i = i - 1
     } else{
-      scores.push(fourBest());
+      best.push(fourBest());
       game.restart();
     }
   }
-  scores.unshift(getScoreMetrics(scores));
-  scores.unshift(date);
-  //scores.push(values);
+
+
+  scores.push(getScoreMetrics(best));
+  scores.push(date);
+  scores.push([val1 ,val2 ,val3, val4, val5, val6,val7] , best);
+
+
   let csv = [];
   //POINTS.lg,POINTS.multip,POINTS.ld,POINTS.mt,POINTS.adjLoad,POINTS.lk,scrNext.sum
-/* csv.push(["INDEX", "LG", "MTP", "ADJ", "SHFT", "SUM\n"].join())
+ csv.push(["INDEX", "LG", "MTP", "MONO", "ADJ", "SHFT","EMPTY", "SUM\n"].join())
   
 
   for (let val of values){
@@ -1513,10 +1751,11 @@ const scorekeeper = function(iter) {
     csv.push(aval + "\n");
   
   }
-*/
-  //game.download("Data.csv", csv)
-  game.download("Results.txt", JSON.stringify(scores));
-  return scores;
+
+  //game.download("CSVs.csv", csv)
+  //game.download("resultant.txt", JSON.stringify(scores));
+  
+  return {scores: scores, csv: csv};
 };
 
 
@@ -1564,7 +1803,7 @@ for(let i = 0 ; i < compare.length; i++){
       cnt++
     }
     if (j == arr.length - 1){
-      percentages.push({Value: `${compare[i]}`, Percent: cnt / arr.length});
+      percentages.push({V: `${compare[i]}`, P: cnt / arr.length});
       cnt = 0;
     }
   }
@@ -1573,3 +1812,18 @@ return percentages;
 
 }
 
+//[0.25, 0.5, 1, 2, 4]
+//GPT
+const generatePerms = function(values, length){
+  if (length === 0) return [[]];
+  let result = []
+  for(let i = 0; i < values.length; i++){
+    let current = values[i];
+    let perms = generatePerms(values, length - 1);
+    for (let perm of perms){
+      result.push([current, ...perm]);
+    }
+  }
+return result;
+
+}
