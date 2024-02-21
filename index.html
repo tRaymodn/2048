@@ -43,6 +43,7 @@
         <button id="autoMove">AutoMove</button>
         <button id="singleMove">Move</button>
         <button id="simulate"> Simulate</button>
+        
       </div>
       <!--
       <input id="inputType" placeholder="Tile Insert Style">
@@ -83,11 +84,27 @@
     <div id="mappingDiv">
       <p id="mappingTag"></p>
     </div>
+
+    <div id="lifeButtons">
+      <div>
+        <button id="stopLife">Stop Life</button>
+      </div>
+      <div>
+        <label id="moveSpeedLabel" for="moveSpeedRange">Speed</label>
+        <input type="range" max="300" min="20" value="200" id="moveSpeedRange">
+        <input type="checkbox" id="lifeWrapButton" name="lifeWrapping" value="false">
+        <label for="lifeWrapButton">Enable Wrapping</label>
+      </div>
+      <div>
+        <button id="startLife">Start Life</button>
+      </div>
+    </div>
     
     <div id="designerDiv">
       <div id="leftButtonsDiv">
         <button id="designerButton">Open Designer</button>
         <button id="makeImageButton">Make Image</button>
+        
       </div>
       <div id="colorPickerArea">
         <div id="colorPicker">

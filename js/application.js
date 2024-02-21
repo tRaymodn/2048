@@ -9,6 +9,7 @@ let dir = 0;
 let autoMoving = false;
 let sp = 500;
 let currentColor = "rgb(255, 255, 255)";
+let golTimeout;
 
 window.onload = function() {
   let colorPickers = document.getElementsByClassName("colorChoice");
@@ -20,44 +21,264 @@ window.onload = function() {
   }
 }
 
-document.getElementsByClassName("title")[0].addEventListener("click", () =>{
-  let board = [[0,0,1,0],[1,0,1,0],[0,0,1,0],[0,1,1,1]];
-  let mapping = {"rgb(0, 0, 0)": 0, "rgb(255, 255, 255)": 1};
-
-    document.getElementById("loadingDiv").style.display = "block";
-    document.getElementById("loader").style.display = "block";
-    setTimeout(() => {
-       game.makeImage(board, mapping, 200);
-    }, 20);
-    setTimeout(() => {
-      game.restart();
-      let newBoard = shift(board, 2, 5);
-      game.makeImage(newBoard, mapping, 200);
-    }, 11000);
+document.getElementById("moveSpeedRange").addEventListener("change", (e) => {
+  let speed = e.target.value;
+  document.getElementById("moveSpeedLabel").innerHTML = `Speed: ${301-speed}`;
 })
 
+document.getElementById("startLife").addEventListener("click", async function(){
+  if(!golTimeout && game.size < 9){
+    document.getElementsByClassName("restart-button")[0].click();
+    let moveTime = document.getElementById("moveSpeedRange").value;
+    let board = makeColorBoardFromPicker();
+    console.log(board.map)
+    let golBoard = GOLTransform(board.map, board.mapping);
+    let zeroRow = new Array(board.map.length).fill(0);
+    let mapping;
+    for(let row of golBoard){
+      console.log(row, zeroRow);
+      if(!arraysEqual(row, zeroRow)){
+        mapping = {"rgb(0, 0, 0)": 0, "rgb(255, 255, 255)": 1};
+        break;
+      }
+    }
+    if(!mapping){ // if the user input an empty board
+      mapping = {"rgb(0, 0, 0)": 0};
+      game.makeImage(golBoard, mapping, moveTime); //TODO need to add error handling to the looping stuff with life.
+      if(game.colorMappings.length > 0 && !game.colorsActive){ // color the tiles if they are not already
+        game.colorMappings.forEach((mapping) => {
+          game.actuator.changeTileClassColor(mapping.tile, mapping.color);
+        })
+        game.colorsActive = true;
+      }
+    }
+    else{
+      document.getElementById("loadingDiv").style.display = "block";
+      document.getElementById("loader").style.display = "block";
+      let moves = game.makeImage(golBoard, mapping, moveTime); //TODO need to add error handling to the looping stuff with life.
+      if(!moves){
+        document.getElementById("mappingTag").innerHTML = "Initial configuration cannot be made currently"
+      }
+      else{
+        if(game.colorMappings.length > 0 && !game.colorsActive){ // color the tiles if they are not already
+          game.colorMappings.forEach((mapping) => {
+            game.actuator.changeTileClassColor(mapping.tile, mapping.color);
+          })
+          game.colorsActive = true;
+        }
+        let wrap = false;
+        if(document.getElementById("lifeWrapButton").checked) wrap = true;
+        GOLLoop(golBoard, moveTime, wrap, moves.length);
+      }
+    }
+    
+  }
+  else{
+    console.log("Game of Life already playing " + golTimeout);
+  }
+})
+
+const arraysEqual = function(arr1, arr2){
+  for(let i = 0; i < arr1.length; i++){
+    if(arr1[i] !== arr2[i]) return false;
+  }
+  return true;
+}
+
+document.getElementById("stopLife").addEventListener("click", () =>{
+  stopGOL(true);
+})
+
+const stopGOL = function(stopGame){
+  clearTimeout(golTimeout);
+  if(stopGame) game.stopImage();
+  golTimeout = 0;
+  console.log(golTimeout);
+}
+
+// send in a board that has been GOLTransformed
+const GOLLoop = async function(board, time, wrap, numMoves){
+  let inbetweenWaitTime = 2500;
+  if(board.length > 6) inbetweenWaitTime = inbetweenWaitTime + 250*board.length;
+  golTimeout = setTimeout(() => {
+    game.restart();
+    let newBoard;
+    if(wrap) newBoard = wrapGOL(board);
+    else newBoard = GOL(board);
+    let mapping = {"rgb(0, 0, 0)": 0, "rgb(255, 255, 255)": 1};
+    let zeros = new Array(newBoard.length).fill(0);
+    let flag = false;
+    let numEqual = 0;
+    let numOnes = 0;
+    for(let i = 0; i < newBoard.length; i++){
+      if(!arraysEqual(newBoard[i], zeros)){
+        flag = true;
+      }
+
+      if(arraysEqual(newBoard[i], board[i])){
+        numEqual = numEqual + 1;
+        if(numEqual === newBoard.length) flag = false;
+      }
+      for(let j = 0; j < newBoard[i].length; j++){
+        if(newBoard[i][j] === 1) numOnes = numOnes + 1;
+      }
+    }
+    let size = Math.pow(newBoard.length, 2);
+    if(flag){
+      let number = game.makeImage(newBoard, mapping, time);
+      console.log(number)
+      if(!number){ // the image cannot be made
+
+      }
+      GOLLoop(newBoard, time, wrap, number.length);
+    }
+    else if(numEqual === board.length){
+      game.makeImage(newBoard, mapping, time);
+      stopGOL(false);
+    }
+    else{
+      game.makeImage(newBoard, {"rgb(0, 0, 0)": 0}, time);
+      stopGOL(false);
+    }
+  }, time*numMoves + inbetweenWaitTime); // base time of number of moves and how long it takes to make each move
+  // or I could find the average number of moves and do a little more than that
+}
+
+const GOLTransform = function(board, mapping){
+  let zeroValue = -1;
+  if(mapping["rgb(0, 0, 0)"] || mapping["rgb(0, 0, 0)"] == 0){
+    zeroValue = mapping["rgb(0, 0, 0)"];
+  }
+  let newBoard = [];
+  for(let row of board){
+    let r = [];
+    for(let val of row){
+      if(val !== zeroValue) r.push(1);
+      else r.push(0);
+    }
+    newBoard.push(r);
+  }
+  return newBoard;
+}
+
+function countAliveNeighbors(board, row, col) {
+  // Count the number of alive cells around the given cell (row, col)
+  let count = 0;
+  const directions = [
+      [-1, -1], [-1, 0], [-1, 1],
+      [0, -1],           [0, 1],
+      [1, -1],  [1, 0],  [1, 1]
+  ];
+
+  for (const [dx, dy] of directions) {
+      let newRow = row + dx;
+      if(newRow < 0) newRow = (board.length+newRow)%board.length;
+      else if(newRow > board.length-1) newRow = newRow%board.length;
+
+      let newCol = col + dy;
+      if(newCol < 0) newCol = (board.length+newCol)%board.length;
+      else if(newCol > board.length-1) newCol = newCol%board.length;
+
+      if (board[newRow][newCol] === 1) {
+          count++;
+      }
+  }
+
+  return count;
+}
+
+function wrapGOL(board) {
+  const newBoard = [];
+
+  for (let i = 0; i < board.length; i++) {
+      const newRow = [];
+
+      for (let j = 0; j < board[i].length; j++) {
+          const aliveNeighbors = countAliveNeighbors(board, i, j);
+
+          // Apply the rules of Conway's Game of Life
+          if (board[i][j] === 1) {
+              if (aliveNeighbors < 2 || aliveNeighbors > 3) {
+                  newRow.push(0); // Cell dies due to underpopulation or overpopulation
+              } else {
+                  newRow.push(1); // Cell survives
+              }
+          } else {
+              if (aliveNeighbors === 3) {
+                  newRow.push(1); // Cell becomes alive due to reproduction
+              } else {
+                  newRow.push(0); // Cell remains dead
+              }
+          }
+      }
+
+      newBoard.push(newRow);
+  }
+
+  return newBoard;
+}
 // play life with colored 2048 boards
 // makes 2048 boards to be the game of life
 // assume it only takes in a board with ones and zeros on it (make function to transcribe boards from multi-color to monocolor)
 // going to take in a board and return a new board based on which cells lived and died
 const GOL = function(board){
+  let newBoard = [];
+  board.forEach((row) => {
+    newBoard.push([...row]);
+  })
   for(let i = 0; i < board.length; i++){
     for(let j = 0; j < board[i].length; j++){
-      let deadCells = 0;
       let aliveCells = 0;
-      if(i > 0){
-        if(board[i-1][j] == 0) deadCells = deadCells +1;
-        else aliveCells = aliveCells +1;
+      let firstFlag, lastFlag = false;
+      if(i > 0){ // not in first row
+        if(board[i-1][j] === 1) aliveCells = aliveCells+1;
+
+        if(j > 0){ // not in first column
+          if(board[i][j-1] === 1) aliveCells = aliveCells+1;
+          
+          if(board[i-1][j-1] === 1) aliveCells = aliveCells+1;
+          firstFlag = true;
+        }
+        if(j < board.length -1){ // not in last column
+          if(board[i][j+1] === 1) aliveCells = aliveCells+1;
+
+          if(board[i-1][j+1] === 1) aliveCells = aliveCells+1;
+          lastFlag = true;
+        }
       }
-      else if(i < board.length){
-        if(board[i+1][j] == 0) deadCells = deadCells+1;
-        else aliveCells = aliveCells+1;
+      
+      if(i < board.length-1){ // not in last row
+        if(board[i+1][j] === 1) aliveCells = aliveCells+1;
+        
+        if(j > 0){ // not in first column
+          if(board[i+1][j-1] === 1) aliveCells = aliveCells+1;
+
+          if(!firstFlag){
+            if(board[i][j-1] === 1) aliveCells = aliveCells+1;
+          }
+        }
+
+        if(j < board.length -1){ // not in last column
+          if(board[i+1][j+1] === 1) aliveCells = aliveCells+1;
+
+          if(!lastFlag){
+            if(board[i][j+1] === 1) aliveCells = aliveCells+1;
+          }
+        }
       }
-      if(j > 0){
-        if(board[i][j-1] == 0) deadCells = deadCells + 1;
+
+      console.log(`${i},${j} alive cells: ${aliveCells}`);
+
+      if(board[i][j] === 0){ // current cell is dead
+        if(aliveCells === 3) newBoard[i][j] = 1;
+      }
+      else{ // current cell is alive
+        if(aliveCells < 2 || aliveCells > 3) newBoard[i][j] = 0;
       }
     }
   }
+
+  return newBoard;
 }
 
 const shift = function(board, direction, number){
@@ -115,6 +336,7 @@ const shift = function(board, direction, number){
 
 document.getElementById('makeImageButton').addEventListener("click", async function(){
   if(game.designer){
+    game.colorsActive = true;
     let colorMap = makeColorBoardFromPicker();
     console.log(JSON.stringify(colorMap.map));
     let openLoad = new Promise((resolve, reject) => {
@@ -124,7 +346,7 @@ document.getElementById('makeImageButton').addEventListener("click", async funct
     })
     openLoad.then(() =>{
       setTimeout(() => {
-        game.makeImage(colorMap.map, colorMap.mapping, 20);
+        game.makeImage(colorMap.map, colorMap.mapping, document.getElementById("moveSpeedRange").value);
       },20);
     })
   }
@@ -132,6 +354,9 @@ document.getElementById('makeImageButton').addEventListener("click", async funct
 })
 
 document.getElementById('plus').addEventListener("click", () => {
+  if(golTimeout){
+    stopGOL(true);
+  }
   if(game.designer){
     game.actuator.clearContainer(document.getElementById("colorPicker"));
     makeImagePickerBoard(Number(game.size) + 1);
@@ -139,6 +364,9 @@ document.getElementById('plus').addEventListener("click", () => {
 })
 
 document.getElementById('minus').addEventListener("click", () => {
+  if(golTimeout){
+    stopGOL(true);
+  }
   if(game.designer){
     game.actuator.clearContainer(document.getElementById("colorPicker"));
     makeImagePickerBoard(Math.max(Number(game.size) - 1, 2));
@@ -149,25 +377,30 @@ document.getElementById('designerButton').addEventListener("click", () => {
   //game.removeGridRows('grid-row', game.size);
   //game = new GameManager(game.size, KeyboardInputManager, HTMLActuator, LocalStorageManager, true);
   if(!game.designer){
-    game.grid.cells = game.grid.empty();
-    game.actuator.clearContainer(game.actuator.tileContainer);
-    game.designer = !game.designer;
-    makeImagePickerBoard(game.size);
-    document.getElementById("colorChangeDiv").style.display = "flex";
-    document.getElementById("currentColorDiv").style.display = "block";
-    document.getElementById("rightButtonsDiv").style.display = "flex";
-    document.getElementById("makeImageButton").style.display = "block";
-    console.log(game.size);
-    let zeros = Array(Number(game.grid.size)).fill(0);
-    // Fill in configurations and configDecomps in tileRows
-    game.tileRows.evaluateState(zeros, []);
-    document.getElementById("designerButton").innerHTML = "Close Designer";
+    if(game.size < 9){ // limit size
+      game.grid.cells = game.grid.empty();
+      game.actuator.clearContainer(game.actuator.tileContainer);
+      game.designer = !game.designer;
+      makeImagePickerBoard(game.size);
+      document.getElementById("colorChangeDiv").style.display = "flex";
+      document.getElementById("currentColorDiv").style.display = "block";
+      document.getElementById("rightButtonsDiv").style.display = "flex";
+      document.getElementById("makeImageButton").style.display = "block";
+      document.getElementById("lifeButtons").style.display = "flex";
+      console.log(game.size);
+      let zeros = Array(Number(game.grid.size)).fill(0);
+      // Fill in configurations and configDecomps in tileRows
+      game.tileRows.evaluateState(zeros, []);
+      document.getElementById("designerButton").innerHTML = "Close Designer";
+    }
+    
   }
   else{
     document.getElementById("colorChangeDiv").style.display = "none";
     document.getElementById("currentColorDiv").style.display = "none";
     document.getElementById("rightButtonsDiv").style.display = "none";
     document.getElementById("makeImageButton").style.display = "none";
+    document.getElementById("lifeButtons").style.display = "none";
     document.getElementById("designerButton").innerHTML = "Open Designer";
     game.actuator.clearContainer(document.getElementById("colorPicker"));
     game.designer = !game.designer;
@@ -219,10 +452,8 @@ document.getElementById('singleMove').addEventListener("click", () => {
   
 
       
-      //futureHendrix(2, game.grid)
-      //console.log(JSON.stringify(futureList) + "length: " + futureList.length + "direction: " + move)
-      //console.log("number of true moves: " + t)
-
+      futureHendrix(3, game.grid);
+      console.log(futureList);
 })
 
 document.getElementById('simulate').addEventListener("click",() =>{
@@ -264,12 +495,26 @@ const makeImagePickerBoard = function(size){
     for(let j = 0; j < size; j++){
       let tile = document.createElement("div")
       tile.setAttribute("class", "colorTile");
-      tile.addEventListener("mousedown", (e) => {
-        changePickerTileColor(e.target);
-      })
-      tile.addEventListener("contextmenu", (e) =>{
+      tile.addEventListener("mouseover", (e) => {
         e.preventDefault();
-        changePickerTileBlack(e.target);
+        if(e.buttons === 1){
+          changePickerTileColor(e.target);
+        }
+        else if(e.buttons === 2){
+          changePickerTileBlack(e.target);
+        }
+      })
+      tile.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        if(e.buttons === 1){
+          changePickerTileColor(e.target);
+        }
+        else if(e.buttons === 2){
+          changePickerTileBlack(e.target);
+        }
+      })
+      tile.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
       })
       row.appendChild(tile);
     }
@@ -856,7 +1101,6 @@ const getOccupiedResults = function(g, i){
 let futureList = []
 
 const futureHendrix = function(times, grid){
-  futureList = []
   if(times > 0){
     for(let i = 0; i < 4; i++){
       let result = getAllResults(grid, i);
@@ -873,7 +1117,7 @@ const futureHendrix = function(times, grid){
                 let tile2 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 2);
                 newerg2.insertTile(tile2);
                 if(times === 1){
-                  futureList.push({move: i, grid: newerg2});
+                  futureList.push({move: i, grid: newerg2, tile: 2});
                 }
                 else{
                   futureHendrix(times - 1, newerg2);
@@ -884,7 +1128,7 @@ const futureHendrix = function(times, grid){
                 let tile4 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 4);
                 newerg4.insertTile(tile4);
                 if(times === 1){
-                  futureList.push({move: i, grid: nerwerg4});
+                  futureList.push({move: i, grid: newerg4, tile: 4});
                 }
                 else{
                   futureHendrix(times - 1, newerg4)
@@ -894,7 +1138,6 @@ const futureHendrix = function(times, grid){
           }
         }
       }
-
     }
   }
 }

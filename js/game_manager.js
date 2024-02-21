@@ -7,6 +7,7 @@ function GameManager(size, InputManager, Actuator, StorageManager, designer) {
   this.designer       = designer;
   this.colorMappings  = [];
   this.colorsActive         = false;
+  this.imageMoveTimeout = undefined;
 
   this.startTiles     = designer === true ? 0 : 2;
 
@@ -148,10 +149,14 @@ plus.addEventListener('click', () => {
 
     this.restart();
     this.actuate();
-    if(this.designer){
+    if(this.designer && this.size < 9){
       let zeros = Array(Number(this.grid.size)).fill(0);
       // Fill in configurations and configDecomps in tileRows
       this.tileRows.evaluateState(zeros, []);
+    }
+    else if(this.size >= 9){
+      document.getElementById("designerDiv").style.display = "none";
+      document.getElementById("lifeButtons").style.display = "none";
     }
   }
 });
@@ -166,11 +171,15 @@ minus.addEventListener('click', () => {
     this.over = true;
     
     this.restart();
-    this.actuate();
+    this.actuate(); // do we need this? I think restart calls setup which calls acctuate anyways TODO
     if(this.designer){
-      let zeros = Array(Number(this.grid.size)).fill(0);
-      // Fill in configurations and configDecomps in tileRows
-      this.tileRows.evaluateState(zeros, []);
+      if(this.size <= 8){
+        document.getElementById("designerDiv").style.display = "flex";
+        document.getElementById("lifeButtons").style.display = "flex";
+        let zeros = Array(Number(this.grid.size)).fill(0);
+        // Fill in configurations and configDecomps in tileRows
+        this.tileRows.evaluateState(zeros, []);
+      }
     }
   }
 });
@@ -180,29 +189,60 @@ minus.addEventListener('click', () => {
 GameManager.prototype.makeImage = function(colorMap, mapping, time){
   this.colorMappings = [];
   document.getElementById("mappingTag").innerHTML = "";
-  let moveSetPromise = new Promise((resolve, reject) => {
-    let moveSets = this.tileRows.tileAssignments(colorMap);
-    resolve(moveSets);
-  })
+  let moveSets = this.tileRows.tileAssignments(colorMap);
 
-  moveSetPromise.then((moveSets) => {
-    document.getElementById("loadingDiv").style.display = "none";
-    document.getElementById("loader").style.display = "none";
-    if(moveSets.length > 0){
+  document.getElementById("loadingDiv").style.display = "none";
+  document.getElementById("loader").style.display = "none";
+  if(moveSets.length > 0){
+    let index = 0;
+    for(const prop in mapping){ // set tile class colors correctly
+      let mappingNumbers = moveSets[0].mapping[index.toString()];
+      if(typeof(mappingNumbers) === "object"){
+        let map = [];
+        mappingNumbers.forEach((number) => {
+          map.push(number);
+          if(this.colorsActive) this.actuator.changeTileClassColor(number, prop);
+          this.colorMappings.push({tile: number, color: prop});
+        })
+        document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(map)}`;
+      }
+      else{
+        if(this.colorsActive) this.actuator.changeTileClassColor(mappingNumbers, prop);
+        document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(mappingNumbers)}`
+        this.colorMappings.push({tile: number, color: prop});
+      }
+      if(index < mapping.length - 1){
+        document.getElementById("mappingTag").innerHTML += `, `;
+      }
+      index = index + 1;
+    }
+    console.log(JSON.stringify(moveSets[0]))
+    this.makeImageMove(moveSets[0].moves, time, true);
+    return moveSets[0].moves;
+  }
+  else{
+    let colorMapTranspose = colorMap[0].map((_, colIndex) => colorMap.map(row => row[colIndex]));
+    let newColorMapTranspose = Array(colorMapTranspose.length);
+    for(let i = 0; i < colorMapTranspose.length; i++){
+      newColorMapTranspose[i] = colorMapTranspose[colorMapTranspose.length - 1 - i];
+    }
+    console.log("attempting with columns" + JSON.stringify(newColorMapTranspose))
+    let colMoveSet = this.tileRows.tileAssignments(newColorMapTranspose);
+    if(colMoveSet.length > 0){
       let index = 0;
       for(const prop in mapping){ // set tile class colors correctly
-        let mappingNumbers = moveSets[0].mapping[index.toString()];
+        let mappingNumbers = colMoveSet[0].mapping[index.toString()];
         if(typeof(mappingNumbers) === "object"){
           let map = [];
           mappingNumbers.forEach((number) => {
             map.push(number);
-            this.actuator.changeTileClassColor(number, prop);
+            if(this.colorsActive) this.actuator.changeTileClassColor(number, prop);
             this.colorMappings.push({tile: number, color: prop});
           })
           document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(map)}`;
         }
         else{
-          this.actuator.changeTileClassColor(mappingNumbers, prop);
+          if(this.colorsActive) this.actuator.changeTileClassColor(mappingNumbers, prop);
           document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(mappingNumbers)}`
           this.colorMappings.push({tile: number, color: prop});
         }
@@ -211,73 +251,33 @@ GameManager.prototype.makeImage = function(colorMap, mapping, time){
         }
         index = index + 1;
       }
-      this.colorsActive = true;
-      console.log(JSON.stringify(moveSets[0]))
-      this.makeImageMove(moveSets[0].moves, time, true);
-      return true;
+      console.log(JSON.stringify(colMoveSet[0]))
+      this.makeImageMove(colMoveSet[0].moves, time, false);
+      return colMoveSet[0].moves
     }
     else{
-      let colorMapTranspose = colorMap[0].map((_, colIndex) => colorMap.map(row => row[colIndex]));
-      let newColorMapTranspose = Array(colorMapTranspose.length);
-      for(let i = 0; i < colorMapTranspose.length; i++){
-        newColorMapTranspose[i] = colorMapTranspose[colorMapTranspose.length - 1 - i];
-      }
-      console.log("attempting with columns" + JSON.stringify(newColorMapTranspose))
-      let colMoveSet = this.tileRows.tileAssignments(newColorMapTranspose);
-      if(colMoveSet.length > 0){
-        let index = 0;
-        for(const prop in mapping){ // set tile class colors correctly
-          let mappingNumbers = colMoveSet[0].mapping[index.toString()];
-          if(typeof(mappingNumbers) === "object"){
-            let map = [];
-            mappingNumbers.forEach((number) => {
-              map.push(number);
-              this.actuator.changeTileClassColor(number, prop);
-              this.colorMappings.push({tile: number, color: prop});
-            })
-            document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(map)}`;
-          }
-          else{
-            this.actuator.changeTileClassColor(mappingNumbers, prop);
-            document.getElementById("mappingTag").innerHTML += `${prop}: ${JSON.stringify(mappingNumbers)}`
-            this.colorMappings.push({tile: number, color: prop});
-          }
-          if(index < mapping.length - 1){
-            document.getElementById("mappingTag").innerHTML += `, `;
-          }
-          index = index + 1;
-        }
-        this.colorsActive = true;
-        console.log(JSON.stringify(colMoveSet[0]))
-        this.makeImageMove(colMoveSet[0].moves, time, false);
-        return true;
-      }
-      else{
-        console.log("cannot be made at this time");
-        document.getElementById("mappingTag").innerHTML = "Image cannot be made at this time";
-        return false;
-      }
+      console.log("cannot be made at this time");
+      document.getElementById("mappingTag").innerHTML = "Image cannot be made at this time";
+      return false;
     }
-  }).catch((error) => {
-    console.error("error is happening" + error.message + error.name + error.stack);
-  })
-
-  //let moveSets = this.tileRows.tileAssignments(colorMap);
-
+  }
 }
 
 GameManager.prototype.makeImageMove = function(moves, time, isRow){
-   // this setTimout waits time, and then seems to do all of the moves at once.
-    this.designerMove(moves[0].move, moves[0].value, moves[0].position, isRow);
-    console.log(this.grid)
-  if(moves.length > 1){
-      let newMoves = [...moves];
-      newMoves.shift();
-      setTimeout(() => { 
-        this.makeImageMove(newMoves, time, isRow);
-      }, time);
-      
-    }
+  // this setTimout waits time, and then seems to do all of the moves at once.
+  this.designerMove(moves[0].move, moves[0].value, moves[0].position, isRow);
+  console.log(this.grid)
+if(moves.length > 1){
+    let newMoves = [...moves];
+    newMoves.shift();
+    this.imageMoveTimeout = setTimeout(() => { 
+      this.makeImageMove(newMoves, time, isRow);
+    }, time);
+  }
+}
+
+GameManager.prototype.stopImage = function(){
+  clearTimeout(this.imageMoveTimeout);
 }
 
 // if grid is empty, insert a value at the given position, else, just set the insert and value to be correct and make the move
@@ -366,7 +366,7 @@ GameManager.prototype.setup = function () {
   if(!this.designer){
     this.addStartTiles(); 
   }
-  else{
+  else if(this.size < 9){ // limits the size of designer to 8 for now
     let zeros = Array(Number(this.grid.size)).fill(0);
     // Fill in configurations and configDecomps in tileRows
     this.tileRows.evaluateState(zeros, []);

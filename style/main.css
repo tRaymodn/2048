@@ -805,3 +805,13 @@ input{
 #footer{
   background-color: rgba(128, 128, 128, 0.7);
 }
+
+#lifeButtons{
+  display: none;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+
+#moveSpeedRange{
+  display: block;
+}
