@@ -448,7 +448,7 @@ document.getElementById('singleMove').addEventListener("click", () => {
   //let M = crystalBall(1,1,1,1,1,1);
   //console.log(M);
   //game.move(M);
-  let p = optimize(-10,10, 8 , 5, 100 );  // (from , to , number of parents per generation, number of games played per generation , number of generations )
+  let p = optimize(-10,10, 2 , 1, 1 );  // (from , to , number of parents per generation, number of games played per generation , number of generations )
   game.download("GENES.txt" , JSON.stringify(p));
 
   
@@ -515,7 +515,7 @@ document.getElementById('autoMove').addEventListener("click", () => {
         clearInterval(interval)
         autoMoving = false;
       }else{
-        let M = crystalBall();
+        let M = crystalBall(1,1,1,1,1,1);
       
       game.move(M);
       let state = game.getBoardState();
@@ -547,11 +547,13 @@ const crystalBall = function ( val1 ,val2 ,val3, val4, val5, val6 ){
   let shiftScoresR = [];
   let shiftScoresD = [];
   let shiftScoresL = [];
+  //console.log(val1,val2,val3,val4,val5,val6)
+
 
   futureList = [];
-  bestFutureMove = -1;
-  bestFuturePoints = 0;
-  futureHendrix(2, game.grid , true , -1) 
+  bestFutureMove = -Infinity;
+  bestFuturePoints = -Infinity;
+  futureHendrix(2, game.grid , true , -1,val1 ,val2 ,val3, val4, val5, val6 ) 
   //console.log(bestFutureMove);
   return bestFutureMove;
   //console.log(futureList);
@@ -1274,13 +1276,13 @@ const getOccupiedResults = function(g, i){
   return {tiles: currOccupied, moved: result.moved };
 }
 let futureList = []
-let bestFuturePoints = 0;
-let bestFutureMove = -1;
+let bestFuturePoints = -Infinity;
+let bestFutureMove = -Infinity;
 let move;
 
 //Heuristics to cut off branches that have less points than ones we've already seen
 // 
-const futureHendrix = function(times, grid, isFirst, firstMove){
+const futureHendrix = function(times, grid, isFirst, firstMove, val1 ,val2 ,val3, val4, val5, val6){
   move = firstMove;
   if(times > 0){
     for(let i = 0; i < 4; i++){
@@ -1301,8 +1303,15 @@ const futureHendrix = function(times, grid, isFirst, firstMove){
                 let tile2 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 2);
                 newerg2.insertTile(tile2);
                 if(times === 1){
-
-                  futureList.push({move: move, grid: newerg2, tile: 2}); // pushes {FirstMove, gridAfterTimesAndInserts, ValueOfLastTileInserted}
+                  let p = points(newerg2, move,val1 ,val2 ,val3, val4, val5, val6);
+                  //console.log(p.eq)
+                    if(p.eq > bestFuturePoints){
+                    
+                      bestFuturePoints = p.eq;
+                      bestFutureMove = move;
+                      
+                    }
+                  //futureList.push({move: move, grid: newerg2, tile: 2}); // pushes {FirstMove, gridAfterTimesAndInserts, ValueOfLastTileInserted}
                 }
                 else{
 
@@ -1319,13 +1328,24 @@ const futureHendrix = function(times, grid, isFirst, firstMove){
 
                   // here is where we could prevent bad moves that results specifically due to a small chain, large tiles not in corner, and 
                   // other specific factors returned from points()
-                  let p = points(newerg2, move, 1,1,1,1,1,1,1);
-                  if(p.eq > bestFuturePoints/3){
+                  let p = points(newerg2, move,val1 ,val2 ,val3, val4, val5, val6);
+                  //console.log(p.eq)
+                  if(p.eq < 0 ){
+                    if(p.eq > bestFuturePoints*3){
+                      if(p.eq > bestFuturePoints){
+                        bestFuturePoints = p.eq;
+                        bestFutureMove = move;
+                        //console.log(move);
+                      }
+                      futureHendrix(times - 1, newerg2, false, move, val1 ,val2 ,val3, val4, val5, val6);
+                    }
+                 }else if(p.eq > bestFuturePoints/3){
                     if(p.eq > bestFuturePoints){
                       bestFuturePoints = p.eq;
                       bestFutureMove = move;
+                      //console.log(move);
                     }
-                    futureHendrix(times - 1, newerg2, false, move);
+                    futureHendrix(times - 1, newerg2, false, move  ,val1 ,val2 ,val3, val4, val5, val6);
                   }
                   
                   
@@ -1339,16 +1359,34 @@ const futureHendrix = function(times, grid, isFirst, firstMove){
                 let tile4 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 4);
                 newerg4.insertTile(tile4);
                 if(times == 1){
-                  futureList.push({move: move, grid: newerg4 , tile: 4});
-                }
-                else{
-                  let p = points(newerg4, move, 1,1,1,1,1,1,1);
-                  if(p.eq > bestFuturePoints/3){
+                  let p = points(newerg4, move, val1 ,val2 ,val3, val4, val5, val6);
+                  //console.log(p.eq)
                     if(p.eq > bestFuturePoints){
                       bestFuturePoints = p.eq;
                       bestFutureMove = move;
+                      //console.log(move);
+                  }
+                  //futureList.push({move: move, grid: newerg4 , tile: 4});
+                }
+                else{
+                  let p = points(newerg4, move, val1 ,val2 ,val3, val4, val5, val6);
+                  //console.log(p.eq)
+                  if(p.eq < 0){
+                    if(p.eq > bestFuturePoints * 3){
+                      if(p.eq > bestFuturePoints){
+                        bestFuturePoints = p.eq;
+                        bestFutureMove = move;
+                        //console.log(move);
+                      }
+                      futureHendrix(times - 1, newerg4, false, move, val1 ,val2 ,val3, val4, val5, val6);
                     }
-                    futureHendrix(times - 1, newerg4, false, move);
+                  }else if(p.eq > bestFuturePoints/3){
+                    if(p.eq > bestFuturePoints){
+                      bestFuturePoints = p.eq;
+                      bestFutureMove = move;
+                      //console.log(move);
+                    }
+                    futureHendrix(times - 1, newerg4, false, move, val1 ,val2 ,val3, val4, val5, val6);
                   }
                 }
                 break;
@@ -1427,7 +1465,7 @@ const bestToWorst = function(tile){
 let scrLeft = 0; 
 let scrRight = 0;
 
-const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
+const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
   //console.log(val1, val2, val3, val4, dir)
   let lg = 0; // largest in corner
   //let ld = 0; // loading tiles
@@ -1711,6 +1749,7 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
   else{
     chainScr = lg - chainScr;
   }
+  //console.log(val1,val2,val3,val4,val5,val6)
  //console.log("Lg: ", lg , "Chain:" , chainScr , "Mono:" , monoScr  ,"adjLoad" , adjLoad, "Shift" ,shiftLoad , "EMPTY" , numEmpty)
   let eq =  (lg * val1) + (monoScr*val2 ) + (merges*val3) + (chainScr *val4 ) + (shiftLoad*val5 ) + (adjLoad *val6)  //+ ld + lk +  mt //(maybe unimportant)
   //console.log(eq);
@@ -1910,7 +1949,7 @@ const getValidMoves = function(){
 }
 
 
-const scoreboard = function(val1 ,val2 ,val3, val4, val5, val6,val7){
+const scoreboard = function(val1 ,val2 ,val3, val4, val5, val6){
   let moves = getValidMoves()
   let P = []
   let best = Number.NEGATIVE_INFINITY
@@ -1921,7 +1960,7 @@ const scoreboard = function(val1 ,val2 ,val3, val4, val5, val6,val7){
     //Values = [];
     let result = game.getResultingPosition(game.grid, i);
     
-    let POINTS = points(result.grid, i , val1 ,val2 ,val3, val4, val5, val6, val7); //OBJECT
+    let POINTS = points(result.grid, i , val1 ,val2 ,val3, val4, val5, val6); //OBJECT
     let p = POINTS.eq ;
     Values.push([POINTS.lg,POINTS.multip, POINTS.mono, POINTS.adjLoad,POINTS.shiftLoad, POINTS.numEmpty, p])
 
@@ -2009,7 +2048,7 @@ const loadAdj = function(grid, positions) {
 }
 
 
-const scorekeeper = function(iter, val1 ,val2 ,val3, val4, val5, val6 ,val7) {
+const scorekeeper = function(iter, val1 ,val2 ,val3, val4, val5, val6 ) {
   let scores = [];
   let date = new Date();
   let sp = 100;
@@ -2017,7 +2056,7 @@ const scorekeeper = function(iter, val1 ,val2 ,val3, val4, val5, val6 ,val7) {
   let best = []
   for(let i = 0 ; i <= iter; i++){
     if (!game.isGameTerminated()) {
-      let m = crystalBall( val1 ,val2 ,val3, val4, val5, val6 ,val7);
+      let m = crystalBall( val1 ,val2 ,val3, val4, val5, val6 );
       //console.log(m);
       game.move(m);
       //values.push(sc.p);
@@ -2032,7 +2071,7 @@ const scorekeeper = function(iter, val1 ,val2 ,val3, val4, val5, val6 ,val7) {
 
   scores.push(getScoreMetrics(best));
   scores.push(date);
-  scores.push([val1 ,val2 ,val3, val4, val5, val6,val7] , best);
+  scores.push([val1 ,val2 ,val3, val4, val5, val6] , best);
 
 
   let csv = [];
