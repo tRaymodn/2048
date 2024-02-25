@@ -443,10 +443,14 @@ document.getElementById('singleMove').addEventListener("click", () => {
 
 
   
-  let scr = crystalBall();
-  game.move(scr);
-  //let M = crystalBall();
+  //let scr = scoreboard(1,1,1,1,1,1,1);
+  //game.move(scr.m);
+  //let M = crystalBall(1,1,1,1,1,1);
+  //console.log(M);
   //game.move(M);
+  let p = optimize(-10,10, 8 , 5, 100 );  // (from , to , number of parents per generation, number of games played per generation , number of generations )
+  game.download("GENES.txt" , JSON.stringify(p));
+
   
 
   //console.log("R" , isLockedRow(game.grid, 0))
@@ -456,13 +460,13 @@ document.getElementById('singleMove').addEventListener("click", () => {
   
   
       
-      futureHendrix(3, game.grid);
-      console.log(futureList);
+      //futureHendrix(3, game.grid);
+      //console.log(futureList);
 })
 
   // way to favor higher percentages to choose better values  
   document.getElementById('TEST').addEventListener("click",() =>{
-  let test =  scorekeeper(5, 1,1,1,1,1,1,0);
+  let test =  scorekeeper( 4,2,1,4.5,-0.5,3,0);
   game.download("HSCORES.txt", JSON.stringify(test.scores[0]));
   });
 
@@ -534,7 +538,7 @@ document.getElementById('autoMove').addEventListener("click", () => {
  // MORE FUTURE STATES
  // VARY WEIGHTS
 */
-const crystalBall = function (){
+const crystalBall = function ( val1 ,val2 ,val3, val4, val5, val6 ){
   let U = 0;
   let R = 0; 
   let D = 0;
@@ -545,13 +549,13 @@ const crystalBall = function (){
   let shiftScoresL = [];
 
   futureList = [];
-  futureHendrix(2, game.grid , true , -1) 
+  futureHendrix(1, game.grid , true , -1) 
   //console.log(futureList);
   
  for (let newGrid of futureList){
   let M = newGrid.move ;
   let spawned = newGrid.tile;
-  let P = points( newGrid.grid, M, 1,1,1,1,1,1) // lg mono empty chain shift adj
+  let P = points( newGrid.grid, M,  val1 ,val2 ,val3, val4, val5, val6 ) // lg mono empty chain shift adj
   let aScr = P.eq;
   //console.log(spawned)
 
@@ -559,39 +563,39 @@ const crystalBall = function (){
     case 0:
       if (spawned == 2){
         U +=  (aScr * 0.9);
-        shiftScoresU.push(P.numEmpty);
+        shiftScoresU.push(P.eq);
       } else {
         U += (aScr * 0.1);
-        shiftScoresU.push(P.numEmpty);
+        shiftScoresU.push(P.eq);
       }
       break;
     case 1:
       if (spawned == 2){
-        R+= (aScr * 0.9);
-        shiftScoresR.push(P.numEmpty);
+        R += (aScr * 0.9);
+        shiftScoresR.push(P.eq);
       } else {
         R += (aScr * 0.1);
-        shiftScoresR.push(P.numEmpty);
+        shiftScoresR.push(P.eq);
       }
       break;
     case 2:
       if (spawned == 2){
         D += (aScr * 0.9 );
-        shiftScoresD.push(P.numEmpty);
+        shiftScoresD.push(P.eq);
       } else {
         D += (aScr * 0.1) ;
-        shiftScoresD.push(P.numEmpty);
+        shiftScoresD.push(P.eq);
       }
       break;
 
     case 3:
 
     if (spawned == 2){
-      L+= (aScr * 0.9);
-      shiftScoresL.push(P.numEmpty);
+      L += (aScr * 0.9);
+      shiftScoresL.push(P.eq);
     } else {
-      L+= (aScr * 0.1);
-      shiftScoresL.push(P.numEmpty);
+      L += (aScr * 0.1);
+      shiftScoresL.push(P.eq);
     }
       break;
   }
@@ -599,40 +603,29 @@ const crystalBall = function (){
 
  if(shiftScoresU.length <= 0){
   shiftScoresU.push(0)
+  U = -Infinity;
  }
  if(shiftScoresR.length <= 0){
   shiftScoresR.push(0)
+  R = -Infinity
  }
  if(shiftScoresD.length <= 0){
   shiftScoresD.push(0)
+  D = -Infinity
  }
  if(shiftScoresL.length <= 0){
   shiftScoresL.push(0)
+  L = -Infinity
  }
- console.log(shiftScoresU,shiftScoresR,shiftScoresD,shiftScoresL )
+ //console.log(shiftScoresU,shiftScoresR,shiftScoresD,shiftScoresL )
  //console.log(U, R, D, L);
  let UorD = (U > D) ? { avg: U/shiftScoresU.length, dir: 0 } : { avg: D/ shiftScoresD.length, dir: 2 };
  let LorR = (L > R) ? { avg: L/shiftScoresL.length, dir: 3 } : { avg: R/shiftScoresR.length, dir: 1 };
 
- console.log( U/shiftScoresU.length,D/ shiftScoresD.length, L/shiftScoresL.length ,R/shiftScoresR.length);
+ //console.log( U/shiftScoresU.length,R/shiftScoresR.length, D/ shiftScoresD.length, L/shiftScoresL.length );
 
-/*
- if (sumU == sumD){
-  let shiftSumU = shiftScoresU.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-  let shiftSumD = shiftScoresD.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-  UorD = (shiftSumU > shiftSumD) ?  { avg: sumU, dir: 0 } : { avg: sumD, dir: 2 };
-  
-
- }
- if (sumL == sumR){
-  let shiftSumL = shiftScoresL.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-  let shiftSumR = shiftScoresR.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-  LorR = (shiftSumL > shiftSumR) ?  { avg: sumL, dir: 3 } : { avg: sumR, dir: 1 };
-  
- }
- */
  let final = (UorD.avg > LorR.avg) ? UorD.dir : LorR.dir;
-console.log(final)
+//console.log(final)
 
 return final;
 }
@@ -1208,13 +1201,12 @@ const countRow = function(r){
     return cnt;
   }
 
-  //TODO: Make NULL TILES  NOT MATTER
   const getRowCons = function(r){
     let arr = [];
     for(let i = 0; i < r.length ; i++){
       if (r[i] != null){
         arr.push(r[i]);
-      } else break;
+      } else continue;
     }
     return arr;
   }
@@ -1300,14 +1292,11 @@ const futureHendrix = function(times, grid, isFirst, firstMove){
                 let newerg2 = new Grid(grid.size, res);
                 let tile2 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 2);
                 newerg2.insertTile(tile2);
-                if(times === 1){
+                if(times == 1){
                   futureList.push({move: move, grid: newerg2, tile: 2});
                 }
                 else{
-
-                   
                   futureHendrix(times - 1, newerg2, false, move);
-                  
                 }
                 break;
               case 1:
@@ -1316,7 +1305,7 @@ const futureHendrix = function(times, grid, isFirst, firstMove){
                 //console.log(res)
                 let tile4 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 4);
                 newerg4.insertTile(tile4);
-                if(times === 1){
+                if(times == 1){
                   futureList.push({move: move, grid: newerg4 , tile: 4});
                 }
                 else{
@@ -1969,11 +1958,13 @@ const scorekeeper = function(iter, val1 ,val2 ,val3, val4, val5, val6 ,val7) {
   let best = []
   for(let i = 0 ; i <= iter; i++){
     if (!game.isGameTerminated()) {
-      let m = crystalBall();
+      let m = crystalBall( val1 ,val2 ,val3, val4, val5, val6 ,val7);
+      //console.log(m);
       game.move(m);
       //values.push(sc.p);
       i = i - 1
     } else{
+      console.log(i);
       best.push(fourBest());
       game.restart();
     }
@@ -2071,3 +2062,122 @@ const generatePerms = function(values, length){
 return result;
 
 }
+
+const optimize = function (from , to, numP, gamesPer, iter){
+  let best = -Infinity;
+  let bestData; 
+  let scores = [];
+  let P = getParents(from , to,numP);
+//let P = [[2,2,2,0,1.5,0],[2,2,2,0,1.5,0],[3,2,5,-2,2,0],[2,2,2,0,1.5,0]]
+  //console.log(P);
+  for(let k = 0; k <= iter; k++){
+    console.log(k);
+    for (let p of P){
+      let scr = scorekeeper(gamesPer, p[0],p[1],p[2],p[3],p[4],p[5]);
+      //console.log(scr);
+      scores.push({percents: scr.scores[0] , weights: p, pScr: percentScore(scr.scores[0])});
+    }
+
+    scores.sort((a,b) => b.pScr - a.pScr);
+    let total = scores.reduce((acc,val) => acc + val.pScr, 0 );
+
+    if (scores[0].pScr > best){
+      best = scores[0].pScr;
+      bestData = {score: best , weights: scores[0].weights , percents : scores[0].percents}
+    }
+
+    //console.log(scores);
+    let selected = selection(total, scores, numP);
+    //console.log(selected)
+    
+    let crossedSelected = crossover(selected);
+    //console.log(crossedSelected);
+
+    let mutated = mutate(from, to, crossedSelected);
+    //console.log(mutated);
+    P = mutated;
+    scores = [];
+  }
+  return bestData; 
+}
+
+const getParents = function(from , to ,numP){
+  let possibleValues = [];
+  let selected = [];
+  let parents = [];
+  for (let i = from ; i <= to ; i= i + 0.5){
+    possibleValues.push(i);
+  }
+  
+  for(let j = 0; j < numP; j++){
+    selected = []; 
+    for (let i = 0; i < 6 ; i++){
+      let r = Math.floor(Math.random() * possibleValues.length);
+      selected.push(possibleValues[r]);
+    }
+    parents.push(selected);
+  }
+  return parents;
+
+
+
+}
+const percentScore = function(pObj){
+  let scr = 0;
+  for(i = 0; i < pObj.length; i++){
+    let obj = pObj[i];
+    scr += (obj.V * obj.P);
+  }
+  return scr; 
+}
+
+const selection = function (total , pObj, numP){
+  let newParents = []; 
+  for (let i = 0; i < numP; i++){
+    let rand = Math.random() * total;
+    let sum = 0;
+    for(let v of pObj){
+      sum += v.pScr;
+      if (rand <= sum){
+        newParents.push(v.weights);
+        break;
+      }
+    }
+  }
+  return newParents;
+}
+
+const crossover = function(weights){
+  let crossedOver = []
+  for(let i = 0; i < weights.length; i += 2 ){
+    let parent1 = weights[i].slice();
+    let parent2 = weights[i + 1].slice();
+    for (let j = 0; j < parent1.length; j++){
+      let rand = Math.floor((Math.random() * 2));
+      if (rand == 1){
+        console.log(i,j);
+        let temp = parent2[j];
+        parent2[j] = parent1[j];
+        parent1[j] = temp;
+      }
+    }
+    crossedOver.push(parent1);
+    crossedOver.push(parent2);
+  }
+  return crossedOver;
+}
+
+const mutate = function(from , to, weights){
+  let newParents = [];
+  for (let parent of weights){
+    let randI = Math.floor((Math.random() * parent.length));
+    let randGene = (Math.random() * (to  - from) )+ from; 
+    //console.log(parent , randI, randGene);
+    let parentCopy = parent.slice();
+    parentCopy[randI] = randGene;
+    newParents.push(parentCopy)
+  }
+  return newParents;
+
+}
+//TODO: Look into

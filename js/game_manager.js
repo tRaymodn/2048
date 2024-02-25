@@ -125,7 +125,7 @@ GameManager.prototype.restart = function () {
 
 GameManager.prototype.removeGridRows = function(className, nToRemove){
 let all = document.querySelectorAll('.' + className);
-console.log(all);
+//console.log(all);
 for (let i = 0; i < nToRemove; i++){
   all[i].remove();;
 }
