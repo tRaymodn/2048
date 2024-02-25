@@ -549,13 +549,17 @@ const crystalBall = function ( val1 ,val2 ,val3, val4, val5, val6 ){
   let shiftScoresL = [];
 
   futureList = [];
-  futureHendrix(1, game.grid , true , -1) 
+  bestFutureMove = -1;
+  bestFuturePoints = 0;
+  futureHendrix(2, game.grid , true , -1) 
+  //console.log(bestFutureMove);
+  return bestFutureMove;
   //console.log(futureList);
-  
  for (let newGrid of futureList){
   let M = newGrid.move ;
   let spawned = newGrid.tile;
-  let P = points( newGrid.grid, M,  val1 ,val2 ,val3, val4, val5, val6 ) // lg mono empty chain shift adj
+  let P = points( newGrid.grid, M, 1,1,1,1,1,1) // lg mono empty chain shift adj 
+  // P takes in the grid after (times) moves and inserts, and the first move that was made for that grid
   let aScr = P.eq;
   //console.log(spawned)
 
@@ -1270,8 +1274,12 @@ const getOccupiedResults = function(g, i){
   return {tiles: currOccupied, moved: result.moved };
 }
 let futureList = []
+let bestFuturePoints = 0;
+let bestFutureMove = -1;
 let move;
 
+//Heuristics to cut off branches that have less points than ones we've already seen
+// 
 const futureHendrix = function(times, grid, isFirst, firstMove){
   move = firstMove;
   if(times > 0){
@@ -1282,21 +1290,46 @@ const futureHendrix = function(times, grid, isFirst, firstMove){
         if (isFirst){
           move = i;
         }
-        let res = make2dArray(result.tiles)
-        let newg = new Grid(grid.size, res);
+        let res = make2dArray(result.tiles) // 2d array after move
+        let newg = new Grid(grid.size, res); // new grid with new board
         let unnocupied = newg.availableCells()
-        for(let j = 0; j < unnocupied.length; j++){
-          for(let k = 0; k < 2; k++){
+        for(let j = 0; j < unnocupied.length; j++){ // go through unnocupied cells
+          for(let k = 0; k < 2; k++){ // insert both a 2 and a 4, if is last time, push it to big list, if not, run functn again with one less times
             switch(k){
               case 0:
                 let newerg2 = new Grid(grid.size, res);
                 let tile2 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 2);
                 newerg2.insertTile(tile2);
-                if(times == 1){
-                  futureList.push({move: move, grid: newerg2, tile: 2});
+                if(times === 1){
+
+                  futureList.push({move: move, grid: newerg2, tile: 2}); // pushes {FirstMove, gridAfterTimesAndInserts, ValueOfLastTileInserted}
                 }
                 else{
-                  futureHendrix(times - 1, newerg2, false, move);
+
+                  // if we check points here, instead of doing it all at the end, we can cut off bad branches
+                  // don't want to just cut off branches with a worse score, becuase there might be later branches that come from it
+                  // that result in an eventually higher score
+                  // I have access to the entire point breakdown here, and this happens after the new tile is inserted, so 
+                  // like if lg drops significantly then we don't have to run the function again on that one
+
+                  // or if we don't want to do an iterative comparative thing, then we might be able to keep track of a "global" best move
+                  // where we have the best score/breakdown recorded so far and if the score/breakdown of a resulting board is some fraction of 
+                  // the current best s/b then we just don't explore it.
+
+
+                  // here is where we could prevent bad moves that results specifically due to a small chain, large tiles not in corner, and 
+                  // other specific factors returned from points()
+                  let p = points(newerg2, move, 1,1,1,1,1,1,1);
+                  if(p.eq > bestFuturePoints/3){
+                    if(p.eq > bestFuturePoints){
+                      bestFuturePoints = p.eq;
+                      bestFutureMove = move;
+                    }
+                    futureHendrix(times - 1, newerg2, false, move);
+                  }
+                  
+                  
+                  
                 }
                 break;
               case 1:
@@ -1309,7 +1342,14 @@ const futureHendrix = function(times, grid, isFirst, firstMove){
                   futureList.push({move: move, grid: newerg4 , tile: 4});
                 }
                 else{
-                  futureHendrix(times - 1, newerg4, false, move);
+                  let p = points(newerg4, move, 1,1,1,1,1,1,1);
+                  if(p.eq > bestFuturePoints/3){
+                    if(p.eq > bestFuturePoints){
+                      bestFuturePoints = p.eq;
+                      bestFutureMove = move;
+                    }
+                    futureHendrix(times - 1, newerg4, false, move);
+                  }
                 }
                 break;
             }
@@ -1377,7 +1417,7 @@ const bestToWorst = function(tile){
     sum = 0;
     for (let i = 0; i < arr.length; i++){
       if(arr[i] != null){
-        sum += arr[i].value;
+        sum  = sum + arr[i].value;
       }
     }
     return sum;
@@ -1430,12 +1470,18 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
   /*
   EMPTY TILES
   */
-
-  let occTiles = getOccupiedResults(grid, dir);
-  let currOcc = getCurrentOccupiedTiles();
-  let currEmpty = (Math.pow(game.grid.size, 2) - 1 - currOcc.length)
- let numEmpty = (Math.pow(grid.size , 2) - 1 -  occTiles.tiles.length);
- let merges = (numEmpty - currEmpty) ;
+  let numEmpty = 0;
+  for(let i = 0; i < grid.size; i++){
+    for(let j = 0; j < grid.size; j++){
+      if(!grid.cells[i][j]){
+        numEmpty = numEmpty + 1;
+      }
+    }
+  }
+  //let currOcc = getCurrentOccupiedTiles(); 
+  //let currEmpty = (Math.pow(game.grid.size, 2) - 1 - currOcc.length)
+  //let merges = (numEmpty - currEmpty) ; changing to objective number of empty tiles
+  let merges = numEmpty;
 
 
 
@@ -1454,7 +1500,7 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
 
   // obtain chain metrics for comparison later 
   //let mono = assessMono(grid, RR, CR ,dir);
-  let chain  = assessChain(grid, nextRowI, nextColI, RR, CR, dir);
+  let chain  = assessChain(grid, nextRowI, nextColI, RR, CR, dir); // TODO remove unnecesary function params  here and line below "dir"
   let mono = assessMono(grid, RR, CR, dir);
 
   let ourChain = (chain.mC > chain.mR) ?  chain.arrC : chain.arrR
@@ -1490,8 +1536,13 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
     //want to create a method that will run until all tiles that are adjacent to other tiles havea score 
     // always have to move so look at next adj and calcualte score of adj tiles 
     let desAdj = [];
-
-    while (broken.length < getOccupiedResults(grid, dir).tiles.length && adjNext.length > 0 ){
+    let currOccu = 0;
+    for(let i = 0; i < grid.size; i++){
+      for(let j = 0; j < grid.size; j++){
+        if(grid.cells[i][j]) currOccu = currOccu + 1;
+      }
+    }
+    while (broken.length < currOccu && adjNext.length > 0 ){ // again we are getting occupied results from grid and dir which makes no sense
       adjNext = new Set(loadAdj(grid, broken))
       adjNext = [...adjNext]
       for (let tile of adjNext){
@@ -1503,10 +1554,11 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
     }
 
     let nextScrs = [];
-    
+    let totalTiles = 0;
     //console.log(desAdj);
     if(desAdj.length > 0){
     for( let i = 0; i < desAdj.length; i++){
+      totalTiles = totalTiles + desAdj[i].length;
       for(let j = 0; j < desAdj[i].length; j++){
         desAdj[i][j] = (desAdj[i][j] * ((desAdj[i].length - j) / desAdj[i].length));
       }
@@ -1524,6 +1576,7 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
     adjLoad = nextScrs.reduce((accumulator, currentValue) => {
       return accumulator + currentValue;
     }, 0);
+    adjLoad = adjLoad/totalTiles;
      //console.log("SumNext" ,nextScrs, adjLoad , dir);
 
   }
@@ -1652,6 +1705,12 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6,val7){
   //console.log("Chain Multiplier" , multiplier, "LOCK" , lk, "LOAD" ,ld, "Mainchain", mt , '\n');
   //console.log("direction" , dir);
   //console.log("Scores", nextScr , currScr)
+  if(lg == 1){
+    //chainScr = Math.log(chainScr); TODO what value to make this so that the game prefers boards with chains in the corner.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  } 
+  else{
+    chainScr = lg - chainScr;
+  }
  //console.log("Lg: ", lg , "Chain:" , chainScr , "Mono:" , monoScr  ,"adjLoad" , adjLoad, "Shift" ,shiftLoad , "EMPTY" , numEmpty)
   let eq =  (lg * val1) + (monoScr*val2 ) + (merges*val3) + (chainScr *val4 ) + (shiftLoad*val5 ) + (adjLoad *val6)  //+ ld + lk +  mt //(maybe unimportant)
   //console.log(eq);
