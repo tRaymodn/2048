@@ -549,7 +549,7 @@ GameManager.prototype.move = function (direction) {
     if(this.movesAvailable()){
       this.actuator.continueGame();
     }
-    else return 
+    else return;
   }
    
   
@@ -1028,24 +1028,6 @@ GameManager.prototype.getResultingPosition = function(grid, direction){
       return {grid: newGrid, moved:true};
     }
     return {grid: newGrid, moved: false};
-    if (moved) {
-      // here we print the grid and then add the random tile, so right now the representation shows the grid after the move, and before a new tile gets inserted
-      this.printGrid(newGrid)
-      this.appendState(state, move);
-      this.addRandomTileGrid(newGrid)
-      //this.cornerTileInsertRotating(direction);
-      console.log("direction: " + direction)
-      let occupiedCellsArr = this.getOccupiedCells();
-      let maxTile = this.getLargestCell(occupiedCellsArr);
-        for(let i = 0; i < maxTile.length; i++){
-          console.log("Max Tile X: " + maxTile[i].x + " Max Tile Y: " + maxTile[i].y + " Max Tile Value: " + maxTile[i].value);
-        }
-      if (!this.movesAvailable()) {
-        this.over = true; // Game over!
-      }
-  
-      // this.actuate(); don't think we want to actuate since this is just going to return an array of tiles
-    }
 }
 
 GameManager.prototype.printGrid = function(grid){
@@ -1099,11 +1081,6 @@ for(let i = 0; i < anArray.length; i++){
   }
 }
 return maxTiles;
-}
-
-GameManager.prototype.immutableMoves = function(){
-  let occupiedCells = this.getOccupiedCells();
-  let largestTiles = this.getLargestCell(occupiedCells);
 }
 
 
