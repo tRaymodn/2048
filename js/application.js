@@ -443,7 +443,7 @@ document.getElementById('singleMove').addEventListener("click", () => {
 
 
   
-  let scr = scoreboard(1,1,1,1,1,1,1);
+  let scr = scoreboard(8.043567359257668,7.9213674542187675,9,0,6.327435027562505,-1.7095040941182749);
   game.move(scr.m);
   //let M = crystalBall(1,1,1,1,1,1);
   //console.log(M, bestFuturePoints);
@@ -466,11 +466,11 @@ document.getElementById('singleMove').addEventListener("click", () => {
       //futureHendrix(3, game.grid);
       //console.log(futureList);
 })
-
+/*
   // way to favor higher percentages to choose better values  
   document.getElementById('TEST').addEventListener("click",() =>{
   let some = [];
-  let p = optimize(-10,10, 4,10, 5);
+  let p = optimize(-100,100, 6,50, 20);
   some.push("BEST" , p.best.weights + JSON.stringify(p.best.percents)," \\n");
   some.push("ALL" + JSON.stringify(p.all))  // (from , to , number of parents per generation, number of games played per parent , number of generations )
   game.download("generations.txt" , JSON.stringify(some));
@@ -513,7 +513,7 @@ document.getElementById('simulate').addEventListener("click",() =>{
 
   
 })
-
+*/
 document.getElementById('autoMove').addEventListener("click", () => {
   if(!autoMoving){
     interval = setInterval(() => {
@@ -521,8 +521,7 @@ document.getElementById('autoMove').addEventListener("click", () => {
         clearInterval(interval)
         autoMoving = false;
       }else{
-        let M = crystalBall(9.384650731100962,7.9213674542187675,9,1,6.327435027562505,0);
-      
+        let M = crystalBall(8.043567359257668,7.9213674542187675,9,0,6.327435027562505,-1.7095040941182749);
       game.move(M);
       let state = game.getBoardState();
       //console.log(state);
@@ -537,16 +536,10 @@ document.getElementById('autoMove').addEventListener("click", () => {
     autoMoving = false;
   }
 })
-/*
-  TODO: 
- ///AVG VS SUM 
- // NOT MAKING MOVES THAT ARE DETRIMENTAL
- // MORE FUTURE STATES
- // VARY WEIGHTS
-*/
+
 
 const crystalBall = function ( val1 ,val2 ,val3, val4, val5, val6 ){
-  let times = 2;
+  let times = 1;
   futureList = [];
   bestFutureMove = -Infinity;
   bestFuturePoints = -Infinity;
@@ -1115,7 +1108,7 @@ const countRow = function(r){
            temp = arr[i];
            continue;
         }
-        if (arr[i]. value == temp.value){
+        if (arr[i].value == temp.value){
             cnt++
             continue;
         }
@@ -1223,7 +1216,7 @@ const futureHendrix = function(times, grid, isFirst, firstMove, val1 ,val2 ,val3
                 let tile2 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 2);
                 newerg2.insertTile(tile2);
                 if(times === 1){
-                  let p = points(newerg2, move,val1 ,val2 ,val3, val4, val5, val6);
+                  let p = evaluation(newerg2, move,val1 ,val2 ,val3, val4, val5, val6);
                   //console.log(p.adjLoad)
                     if(p.eq > bestFuturePoints){
                     
@@ -1248,7 +1241,7 @@ const futureHendrix = function(times, grid, isFirst, firstMove, val1 ,val2 ,val3
 
                   // here is where we could prevent bad moves that results specifically due to a small chain, large tiles not in corner, and 
                   // other specific factors returned from points()
-                  let p = points(newerg2, move,val1 ,val2 ,val3, val4, val5, val6);
+                  let p = evaluation(newerg2, move,val1 ,val2 ,val3, val4, val5, val6);
                   //console.log(p.eq)
                   if(p.eq < 0 ){
                     if(p.eq > bestFuturePoints*2){
@@ -1279,7 +1272,7 @@ const futureHendrix = function(times, grid, isFirst, firstMove, val1 ,val2 ,val3
                 let tile4 = new Tile({x: unnocupied[j].x, y: unnocupied[j].y}, 4);
                 newerg4.insertTile(tile4);
                 if(times == 1){
-                  let p = points(newerg4, move, val1 ,val2 ,val3, val4, val5, val6);
+                  let p = evaluation(newerg4, move, val1 ,val2 ,val3, val4, val5, val6);
                   //console.log(p.eq)
                     if(p.eq > bestFuturePoints){
                       bestFuturePoints = p.eq;
@@ -1289,7 +1282,7 @@ const futureHendrix = function(times, grid, isFirst, firstMove, val1 ,val2 ,val3
                   //futureList.push({move: move, grid: newerg4 , tile: 4});
                 }
                 else{
-                  let p = points(newerg4, move, val1 ,val2 ,val3, val4, val5, val6);
+                  let p = evaluation(newerg4, move, val1 ,val2 ,val3, val4, val5, val6);
                   //console.log(p.eq)
                   if(p.eq < 0){
                     if(p.eq > bestFuturePoints * 3){
@@ -1385,7 +1378,7 @@ const bestToWorst = function(tile){
 let scrLeft = 0; 
 let scrRight = 0;
 
-const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
+const evaluation = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
   //console.log(val1, val2, val3, val4, dir)
   let lg = 0; // largest in corner
   //let ld = 0; // loading tiles
@@ -1402,14 +1395,11 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
   /*
   -LARGEST IN CORNER 
   */
-
-
-  // get position of the largest tile in the next grid, if so save the value and the row , otherwise the value is zero and we use the first entry in the largest tiles array
   let currMax = game.grid.getMaxPos()[0];
   let nextPos = grid.getMaxPos()
   nextRowI = nextPos[0].y
-  nextColI = nextPos[0].x;
-  nextVal = 1 // TODO:
+  nextColI = nextPos[0].x
+  nextVal = 1
   for (let p of nextPos){
     if (isCorner(p.x, p.y) && p.value > currMax){
       nextVal = p.value * 2 ;
@@ -1423,23 +1413,26 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
       nextColI = p.x
       break;
     }
+    else if (isBorder(p.x,p.y)){
+      nextVal = p.value / 2;
+      nextRowI = p.y;
+      nextColI = p.x;
+      continue;
+    }
   }
 
   /*
   EMPTY TILES
   */
-  let numEmpty = 0;
+  let merges = 0;
   for(let i = 0; i < grid.size; i++){
     for(let j = 0; j < grid.size; j++){
       if(!grid.cells[i][j]){
-        numEmpty = numEmpty + 1;
+        merges++;
       }
     }
   }
-  //let currOcc = getCurrentOccupiedTiles(); 
-  //let currEmpty = (Math.pow(game.grid.size, 2) - 1 - currOcc.length)
-  //let merges = (numEmpty - currEmpty) ; changing to objective number of empty tiles
-  let merges = numEmpty;
+
 
 
 
@@ -1447,39 +1440,19 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
   /*
   CHAINING
   */ 
-
-  // determine which index to start chaining from, then get the row in either normal order or reverse order for current grid
   let RR = false;
   let CR = false;
-
   if ( nextColI >= (grid.size - 1 ) / 2 ) RR = true;
   if ( nextRowI  >= (grid.size - 1 ) / 2) CR = true;
-  
-
-  // obtain chain metrics for comparison later 
-  //let mono = assessMono(grid, RR, CR ,dir);
-  let chain  = assessChain(grid, nextRowI, nextColI, RR, CR, dir); // TODO remove unnecesary function params  here and line below "dir"
+  let chain  = assessChain(grid, nextRowI, nextColI, RR, CR, dir);
   let mono = assessMono(grid, RR, CR, dir);
-
   let ourChain = (chain.mC > chain.mR) ?  chain.arrC : chain.arrR
-  let chainScr = rowValue(ourChain) / ourChain.length;  //TODO: 
+  let chainScr = rowValue(ourChain) / ourChain.length; 
   let monoScr = mono.c + mono.r;
 
 
 
 
-
-  //console.log(mono.c, mono.r)
-  //console.log(chain.mR, chain.arrR, chain.mC, chain.arrC )
-
- // tiles
-
- /*
-  LOADING TILES
-*/
-
-  // given that we have a chain present before and after a move we always want to consider both the average difference in the sum
-  // and the differential between the counts of the chains as a negative value for either will be representative of the change of the board state
     let pos;
     let broken = [];
     for (let t of ourChain){
@@ -1495,13 +1468,14 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
     //want to create a method that will run until all tiles that are adjacent to other tiles havea score 
     // always have to move so look at next adj and calcualte score of adj tiles 
     let desAdj = [];
+    let euclid = [];
     let currOccu = 0;
     for(let i = 0; i < grid.size; i++){
       for(let j = 0; j < grid.size; j++){
         if(grid.cells[i][j]) currOccu = currOccu + 1;
       }
     }
-    while (broken.length < currOccu && adjNext.length > 0 ){ // again we are getting occupied results from grid and dir which makes no sense
+    while (broken.length < currOccu && adjNext.length > 0 ){ 
       adjNext = new Set(loadAdj(grid, broken))
       adjNext = [...adjNext]
       for (let tile of adjNext){
@@ -1579,74 +1553,28 @@ const points = function( grid, dir , val1 ,val2 ,val3, val4, val5, val6){
 
   */
 
- 
-
-  let lockedNext = isLockedRow(grid, nextRowI);
-
   let shiftScores = []
-  //ROW SLIDE Check columns
-  if (dir == 1 || dir == 3 ){
-    
-    //determine direction to check 
-    if( nextColI < grid.size / 2  ){
-      for(let i = 0; i < grid.size - 1; i ++ ){
-        let col = getCol(grid, i) ;
-        shiftScores.push(getConsScr(col)) ; // TODO: 
-      } 
-    }else{
-      for(let i = grid.size - 1; i >= 0; i-- ){
-          let col = getCol(grid, i) ;
-          shiftScores.push(getConsScr(col));
-      } 
-    }
-  }else {
-    if( nextRowI < grid.size / 2  ){
-      for(let i = 0; i < grid.size - 1; i ++ ){
-        let row = getRow(grid, i) ;
-        shiftScores.push(getConsScr(row));
-      } 
-    }else{
-      for(let i = grid.size-1; i >= 0; i-- ){
-          let row = getRow(grid, i) ;
-          shiftScores.push(getConsScr(row) );
-      } 
-    }
-  }
-  //console.log(shiftScores , dir);
+    for(let i = 0; i < grid.size; i ++ ){
+      let col = getCol(grid, i) ;
+      shiftScores.push(getConsScr(col)) ; // TODO: 
+      let row = getRow(grid, i)
+      shiftScores.push(getConsScr(row))
+    } 
 
     shiftLoad = shiftScores.reduce((accumulator, currentValue) => {
       return accumulator + currentValue;
     }, 0);
 
-
-    
-    //console.log("DIR" , dir); /// direction of move
-    //console.log("CHAIN", ourChain); // starting at largest tile, and going towards row and column index with more space, tile muxt be 1/2 previous tile value 
-    //console.log("MONO", monoScr); // number of rows and columns that are descending 
-    //console.log("LG", nextVal); // largest value on the board, 1/2 if not in corner
-    //console.log("EMPTY" , numEmpty )
-    //console.log("ADJ", desAdj); // all tiles on board into heiarchy of closest to further adj tiles
-    //console.log("SHIFT", shiftLoad); // number of tiles that are the same for all rows or columns
-  //SCORES 
-  //mt =  nextMultiplier - currMultiplier;
   lg =  nextVal;
-  //ld = fac + countDif
-  
 
-  //console.log("Largest In Corner:" , lg , "Chain Structure", des, "\n" );
-  //console.log("Chain Multiplier" , multiplier, "LOCK" , lk, "LOAD" ,ld, "Mainchain", mt , '\n');
-  //console.log("direction" , dir);
-  //console.log("Scores", nextScr , currScr)
   if(lg == 1){
-    chainScr = Math.log(chainScr); //TODO what value to make this so that the game prefers boards with chains in the corner.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //chainScr = Math.log(chainScr); //TODO what value to make this so that the game prefers boards with chains in the corner.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   } 
   else{
-    chainScr = lg - chainScr;
+    //chainScr = lg - chainScr;
   }
-  //console.log(val1,val2,val3,val4,val5,val6)
-  //console.log("Lg: ", lg , "Chain:" , chainScr , "Mono:" , monoScr  ,"adjLoad" , adjLoad, "Shift" ,shiftLoad , "EMPTY" , numEmpty)
-  let eq =  (lg * val1) + (monoScr*val2 ) + (merges*val3) + (chainScr *val4 ) + (shiftLoad*val5 ) + (adjLoad *0) //TODO:  //+ ld + lk +  mt //(maybe unimportant)
-  //console.log(eq);
+
+  let eq =  (lg * val1) + (monoScr*val2 ) + (merges*val3) + (chainScr *val4 ) + (shiftLoad*val5 ) + (adjLoad *val6)
   return {lg: lg , multip: chainScr , mono: monoScr, adjLoad: adjLoad  , shiftLoad: shiftLoad ,numEmpty: merges, eq: eq};
   }
 
@@ -1669,27 +1597,24 @@ TODO: clean
 */
 
 //MONOTONICITY
-// go through every row/ col and add 1 to score if every tile in that row is non increasing (including just one tile)
-// starting pos doesnt matter since all rows
-
-const assessMono = function (grid, rr, cr, dir){
+/**
+ * Takes in a grid and two booleans of whether we should reverse the row and column. For every row and column in the grid, get consecutive tiles in that row.
+ * if the next value in the row/column is less than or equal to the current tile rowscr++/colScr++.  
+ * @param {*} grid - a board state containing the size of the grid and all occupied tiles. Tiles contain a value and position.
+ * @param {*} rr - true if largest tile is in the third or 4th position in a row from left to right
+ * @param {*} cr - true if largest tile is in the third or 4th position in a column from down to up
+ * @returns Returns json object of integers representing the number of monotnic rows and columns on a given board
+ */
+const assessMono = function (grid, rr, cr){
   let rowScr = 0;
   let colScr = 0; 
-
   for(let k = 0; k < grid.size; k++){
-    //let dist = Math.abs(j - nextColI);
     let  r = getRow(grid, k);
     let c = getCol(grid, k);
-
     if (rr) r = getRowReverse(grid, k);
     if (cr) c = getColReverse(grid, k);
-    
-
     let consR = getRowCons(r);
     let consC = getColCons(c);
-    //console.log("ROW",consR);
-    //console.log("COL",consC);
-    
     for (let i = 0 ; i < consR.length - 1; i++){
       let next = consR[i + 1]
       let curr = consR[i];
@@ -1699,9 +1624,6 @@ const assessMono = function (grid, rr, cr, dir){
         } else continue;
       } else break;;
     }
-    //console.log("ROWSCR",rowScr++ , dir);
- 
-
     for (let j = 0 ; j < consC.length - 1; j++){
       let next = consC[j + 1]
       let curr = consC[j];
@@ -1711,60 +1633,37 @@ const assessMono = function (grid, rr, cr, dir){
         } else continue;
       } else break;
     }
-    //console.log("COLSCR",colScr++, dir);
-
-
-    //determine if monotonic row / col
-    // if monotionic add to score
-    // if not go to next row
-    //higher score for roes closer to maxtile row
-
   }
   return {r: rowScr, c: colScr};
 }
 
-const assessChain = function(grid, nextRowI, nextColI,  rr, cr , dir){
-
-  //console.log("METRICS CHAIN", grid, r, rIndex, startIndex,  rr)
+const assessChain = function(grid, nextRowI, nextColI,  rr, cr){
   let multiplierR = 1;
   let multiplierC = 1;
   let tempR = nextRowI;
   let tempC = nextColI;
-  
-  
-
   let r = getRow(grid, nextRowI);
-  
   if (rr) r = getRowReverse(grid, nextRowI);
   let ColI = getRowMaxIndex(r);
   let arrR = [r[ColI]];
-
-
   for (let i = ColI; i < r.length - 1; i++){
     let next = r[i + 1]
     let curr = r[i];
-
-    //console.log("RNC" ,r, next, curr, ColI , i, dir);
-
     if(next == null || curr == null) break;
-    
     if ( next.value == curr.value || next.value == curr.value/2 ){
     arrR.push(next);
     multiplierR++;
     } else break;
-
     if (i == r.length - 2){
-      if (nextRowI > (grid.size - 1 )/ 2){
+      if (nextRowI > (grid.size - 1 ) / 2){
         if(tempR != 0){
           tempR--;
         }else break;
       } else if (tempR != grid.size - 1){
         tempR++;
       }else break; 
-
       r = getRowReverse( grid , tempR)
       if (rr) r = getRow( grid , tempR )
-
       if(r[0] != null && (r[0].value  == next.value || r[0].value  == next.value / 2)){
         rr = !rr;
         i = -1; 
@@ -1782,15 +1681,11 @@ const assessChain = function(grid, nextRowI, nextColI,  rr, cr , dir){
   for (let j = RowI; j < c.length - 1; j++){
     let next = c[j + 1]
     let curr = c[j];
-    //console.log("CNC" ,c, next, curr, RowI, j,  dir);
-
     if(next == null || curr == null) break;
-    
     if ( next.value == curr.value || next.value == curr.value/2 ){
     arrC.push(next);
     multiplierC++;
     } else break;
-
     if (j == c.length - 2){
       if (nextColI > (grid.size - 1) / 2 ){ // TODO:
         if (tempC != 0){
@@ -1799,11 +1694,8 @@ const assessChain = function(grid, nextRowI, nextColI,  rr, cr , dir){
       } else if (tempC != grid.size - 1){
         tempC++
       }else break;
-      //console.log(tempC , nextColI,  dir);
-
       c = getColReverse( grid , tempC)
       if (cr) c = getCol( grid , tempC )
-
       if(c[0] != null && (c[0].value  == next.value || c[0].value  == next.value /2 )){
         cr = !cr;
         j = -1; 
@@ -1854,7 +1746,7 @@ const scoreboard = function(val1 ,val2 ,val3, val4, val5, val6){
     //Values = [];
     let result = game.getResultingPosition(game.grid, i);
     
-    let POINTS = points(result.grid, i , val1 ,val2 ,val3, val4, val5, val6); //OBJECT
+    let POINTS = evaluation(result.grid, i , val1 ,val2 ,val3, val4, val5, val6); //OBJECT
     let p = POINTS.eq ;
     Values.push([POINTS.lg,POINTS.multip, POINTS.mono, POINTS.adjLoad,POINTS.shiftLoad, POINTS.numEmpty, p])
 
@@ -2059,7 +1951,39 @@ const optimize = function (from , to, numP, gamesPer, iter){
   let scores = [];
   let allData = [];
   //let P = getParents(from , to,numP);
+let P = [
+  [38.13150057076328,70.65825689371948,78.39999999999841,-22.06118260107131,31.499999999998774,-70.19929693455524],
+[76.60562466667122,45.85000424924081,68.95708472514119,-22.06118260107131,56.256341328656504,22.568109123060637],
+[77.8915632519745,25.099999999998683,78.39999999999841,-34.81916502842468,33.377355731971164,71.97135755918515],
+[38.13150057076328,25.099999999998683,78.39999999999841,-22.06118260107131,31.499999999998774,0.5999999999985957],
+[38.13150057076328,25.099999999998683,78.39999999999841,-22.06118260107131,31.499999999998774,-75.77380207773419],
+[95.50609781226257,25.099999999998683,77.1826125681859,-64.99983210006812,89.5185037173548,50.61952617137081]
+]
+  /*
+  let P = [
+[67.89999999999901,25.099999999998683,78.39999999999841,47.399999999999,50.89999999999905,50.61952617137081],
+[38.13150057076328,25.099999999998683,78.39999999999841,-22.06118260107131,31.499999999998774,0.5999999999985957]
+]
+/*
+  let P = [
+    [67.89999999999901,-70.89377785830209,75.59999999999857,-58.200000000001964,50.89999999999905,77.43027465901125],
+  [-86.60000000000076,25.099999999998683,78.39999999999841,47.399999999999,31.499999999998774,-84.2000000000009],
+  [70.89999999999884,33.6999999999988,4.699999999998596,-52.50000000000188,3.1999999999985973,0.5999999999985957],
+  [-75.80000000000138,42.89999999999893,17.999999999998582,7.886541835433604,33.899999999998805,90.2999999999977],
+  [42.2999999999985965,81.21166823419804,35.6116786730897,0.4999999999985957,23.799999999998665,50.61952617137081],
+  [53.29999999999908,46.69999999999899,-0.8000000000014043,-99.40000000000003,54.299999999999095,-18.5000000000014]
+]
+/*
+  let P = [
+    [94.30158061856844,10.299999999998576,57.25223339488693,-21.726108917830132,99.89999999999719,-7.700000000001394],
+    [33.199999999998795,41.699999999998916,79.19999999999837,-27.00000000000152,-19.10000000000141,-34.20032886400372],
+    [95.50375559607124,84.47064509392789,-12.30405153751218,-78.8000000000012,56.69999999999913,-1.296910809126345],
+    [9.384650731100962,7.9213674542187675,9,0.21578379288881422,6.327435027562505,0],
+    [94.30158061856844,36.32466379129281,9,0.21578379288881422,6.327435027562505,-7.700000000001394],
+    [95.50375559607124,10.299999999998576,9,-62.405541869931945,6.327435027562505,-99.45747245440053]
+]
   //console.log(P);
+  /*
   let P = [
     [5.61843788224936,6.5,10,3.04918115758519,5.214139170356717,0],
     [9.384650731100962,7.9213674542187675,9,0.21578379288881422,6.327435027562505,0],
@@ -2115,10 +2039,10 @@ let P = [
     let selected = selection(total, scores, numP);
     //console.log(selected)
     
-    let crossedSelected = crossover(selected, 0.3);
+    let crossedSelected = crossover(selected, 0.1);
     //console.log(crossedSelected);
 
-    let mutated = mutate(from, to, crossedSelected , 0.05);
+    let mutated = mutate(from, to, crossedSelected , 0.3);
     //console.log(mutated);
     P = mutated;
     scores = [];
